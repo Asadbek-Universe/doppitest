@@ -49,6 +49,7 @@ type Props = {
   value: AdminTabKey;
   onChange: (next: AdminTabKey) => void;
   pendingCentersCount?: number;
+  allowedTabs?: AdminTabKey[];
 };
 
 const overviewItems: Array<{ key: AdminTabKey; label: string; icon: any; description?: string }> = [
@@ -71,7 +72,7 @@ const systemItems: Array<{ key: AdminTabKey; label: string; icon: any }> = [
   { key: "activity", label: "Activity Log", icon: Activity },
 ];
 
-export function AdminSidebar({ value, onChange, pendingCentersCount = 0 }: Props) {
+export function AdminSidebar({ value, onChange, pendingCentersCount = 0, allowedTabs }: Props) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -101,7 +102,7 @@ export function AdminSidebar({ value, onChange, pendingCentersCount = 0 }: Props
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-bold tracking-tight">Admin Panel</span>
-              <span className="text-[10px] text-muted-foreground">IMTS Platform</span>
+              <span className="text-[10px] text-muted-foreground">Doppi</span>
             </div>
           )}
         </div>
@@ -115,7 +116,9 @@ export function AdminSidebar({ value, onChange, pendingCentersCount = 0 }: Props
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
-              {overviewItems.map((item) => (
+              {overviewItems
+                .filter((item) => !allowedTabs || allowedTabs.includes(item.key))
+                .map((item) => (
                 <SidebarMenuItem key={item.key}>
                   <SidebarMenuButton
                     onClick={() => onChange(item.key)}
@@ -148,7 +151,9 @@ export function AdminSidebar({ value, onChange, pendingCentersCount = 0 }: Props
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
-              {managementItems.map((item) => (
+              {managementItems
+                .filter((item) => !allowedTabs || allowedTabs.includes(item.key))
+                .map((item) => (
                 <SidebarMenuItem key={item.key}>
                   <SidebarMenuButton
                     onClick={() => onChange(item.key)}
@@ -184,7 +189,9 @@ export function AdminSidebar({ value, onChange, pendingCentersCount = 0 }: Props
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
-              {systemItems.map((item) => (
+              {systemItems
+                .filter((item) => !allowedTabs || allowedTabs.includes(item.key))
+                .map((item) => (
                 <SidebarMenuItem key={item.key}>
                   <SidebarMenuButton
                     onClick={() => onChange(item.key)}

@@ -32,7 +32,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useOlympiadParticipantsForCenter, useUpdateParticipantScore, useUpdateParticipantStatus, useBulkUpdateParticipantStatus } from '@/hooks/useCenterData';
 import { useBulkIssueCertificates, useOlympiadCertificates } from '@/hooks/useCertificates';
+import { useOlympiadStats } from '@/hooks/useOlympiadAttempts';
 import { toast } from 'sonner';
+import { BarChart3, Download } from 'lucide-react';
 
 interface OlympiadParticipantsManagerProps {
   olympiad: {
@@ -51,6 +53,7 @@ export const OlympiadParticipantsManager: FC<OlympiadParticipantsManagerProps> =
 }) => {
   const { data: participants, isLoading } = useOlympiadParticipantsForCenter(olympiad.id);
   const { data: existingCertificates } = useOlympiadCertificates(olympiad.id);
+  const { data: stats } = useOlympiadStats(olympiad.id);
   const updateScore = useUpdateParticipantScore();
   const updateStatus = useUpdateParticipantStatus();
   const bulkUpdateStatus = useBulkUpdateParticipantStatus();
@@ -253,18 +256,82 @@ export const OlympiadParticipantsManager: FC<OlympiadParticipantsManagerProps> =
   const allSelected = participants && participants.length > 0 && selectedIds.size === participants.length;
   const someSelected = selectedIds.size > 0;
 
+  const handleDownloadCsv = () => {
+    if (!participants?.length) return;
+    const headers = ['Rank', 'Name', 'Score', 'Status', 'Registered At'];
+    const rows = [...participants]
+      .filter(p => p.score != null)
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+      .map((p, i) => [
+        (p.rank ?? i + 1).toString(),
+        (p as { display_name?: string }).display_name ?? 'Unknown',
+        (p.score ?? '').toString(),
+        p.status,
+        p.registered_at,
+      ]);
+    const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `olympiad-${olympiad.title.replace(/\s+/g, '-')}-results.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast.success('Results downloaded');
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Olympiads
         </Button>
       </div>
+
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <BarChart3 className="w-4 h-4" />
+                <span className="text-xs font-medium">Registrations</span>
+              </div>
+              <p className="text-2xl font-bold mt-1">{stats.totalRegistrations}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Users className="w-4 h-4" />
+                <span className="text-xs font-medium">Started</span>
+              </div>
+              <p className="text-2xl font-bold mt-1">{stats.started}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CheckSquare className="w-4 h-4" />
+                <span className="text-xs font-medium">Completed</span>
+              </div>
+              <p className="text-2xl font-bold mt-1">{stats.completed}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Award className="w-4 h-4" />
+                <span className="text-xs font-medium">Avg / Highest</span>
+              </div>
+              <p className="text-2xl font-bold mt-1">{stats.averageScore} / {stats.highestScore}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -279,6 +346,12 @@ export const OlympiadParticipantsManager: FC<OlympiadParticipantsManagerProps> =
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            {participants && participants.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleDownloadCsv}>
+                <Download className="w-4 h-4 mr-2" />
+                Download CSV
+              </Button>
+            )}
             {olympiad.status === 'completed' && participants && participants.length > 0 && (
               <>
                 <Button 

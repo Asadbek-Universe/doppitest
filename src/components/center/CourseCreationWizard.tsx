@@ -93,7 +93,7 @@ export const CourseCreationWizard: FC<CourseCreationWizardProps> = ({
     { section_title: 'Introduction', lessons: [{ title: '', description: '', video_url: '', duration_minutes: 15 }] },
   ]);
   const [media, setMedia] = useState({ thumbnail_url: '' });
-  const [settings, setSettings] = useState({ is_free: true, price: 0, is_published: false });
+  const [settings, setSettings] = useState({ is_free: true, price: 0 });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: subjects } = useSubjects();
@@ -273,7 +273,7 @@ export const CourseCreationWizard: FC<CourseCreationWizardProps> = ({
 
   const handlePublish = async () => {
     if (!canPublish()) {
-      toast.error('Complete all required fields before publishing');
+      toast.error('Complete all required fields before submitting for approval');
       return;
     }
     if (!courseId) return;
@@ -284,9 +284,11 @@ export const CourseCreationWizard: FC<CourseCreationWizardProps> = ({
         thumbnail_url: media.thumbnail_url || null,
         is_free: settings.is_free,
         price: settings.price,
-        is_published: true,
+        is_published: false,
+        approval_status: 'pending_approval',
+        submitted_for_approval_at: new Date().toISOString(),
       });
-      toast.success('Course published');
+      toast.success('Course submitted for admin approval');
       onSuccess?.();
       onClose();
     } catch {

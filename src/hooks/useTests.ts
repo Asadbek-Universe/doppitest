@@ -93,7 +93,7 @@ export function useSubjects() {
   });
 }
 
-// Fetch all published tests with at least 1 question (for public view)
+// Fetch all published, approved tests with at least 1 question (for public view)
 export function useTests(subjectId?: string, difficulty?: number) {
   return useQuery({
     queryKey: ['tests', subjectId, difficulty],
@@ -102,6 +102,7 @@ export function useTests(subjectId?: string, difficulty?: number) {
         .from('tests')
         .select('*, subjects(*)')
         .eq('is_published', true)
+        .eq('approval_status', 'published')
         .gt('questions_count', 0)
         .order('created_at', { ascending: false });
       

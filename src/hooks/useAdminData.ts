@@ -107,22 +107,68 @@ export const usePlatformStats = () => {
   return useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      const [users, courses, tests, centers, enrollments, attempts] = await Promise.all([
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const [
+        users,
+        activeUsers,
+        courses,
+        tests,
+        centers,
+        enrollments,
+        attempts,
+        olympiads,
+        reels,
+        pendingCenters,
+        pendingCourses,
+        pendingTests,
+        pendingOlympiads,
+      ] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .gte('last_activity_at', sevenDaysAgo.toISOString()),
         supabase.from('courses').select('id', { count: 'exact', head: true }),
         supabase.from('tests').select('id', { count: 'exact', head: true }),
         supabase.from('educational_centers').select('id', { count: 'exact', head: true }),
         supabase.from('course_enrollments').select('id', { count: 'exact', head: true }),
         supabase.from('test_attempts').select('id', { count: 'exact', head: true }),
+        supabase.from('olympiads').select('id', { count: 'exact', head: true }),
+        supabase.from('center_reels').select('id', { count: 'exact', head: true }),
+        supabase
+          .from('educational_centers')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'pending'),
+        supabase
+          .from('courses')
+          .select('id', { count: 'exact', head: true })
+          .eq('approval_status', 'pending_approval'),
+        supabase
+          .from('tests')
+          .select('id', { count: 'exact', head: true })
+          .eq('approval_status', 'pending_approval'),
+        supabase
+          .from('olympiads')
+          .select('id', { count: 'exact', head: true })
+          .eq('approval_status', 'pending_approval'),
       ]);
 
       return {
         usersCount: users.count ?? 0,
+        activeUsers7d: activeUsers.count ?? 0,
         coursesCount: courses.count ?? 0,
         testsCount: tests.count ?? 0,
         centersCount: centers.count ?? 0,
         enrollmentsCount: enrollments.count ?? 0,
         attemptsCount: attempts.count ?? 0,
+        olympiadsCount: olympiads.count ?? 0,
+        reelsCount: reels.count ?? 0,
+        pendingCentersCount: pendingCenters.count ?? 0,
+        pendingCoursesCount: pendingCourses.count ?? 0,
+        pendingTestsCount: pendingTests.count ?? 0,
+        pendingOlympiadsCount: pendingOlympiads.count ?? 0,
       };
     },
   });

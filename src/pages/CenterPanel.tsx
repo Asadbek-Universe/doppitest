@@ -179,8 +179,9 @@ const CenterPanel: FC = () => {
       await createCenter.mutateAsync(centerForm);
       toast.success('Center created successfully');
       setDialogOpen(null);
-    } catch {
-      toast.error('Failed to create center');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create center. Please try again.';
+      toast.error(message);
     }
   };
 

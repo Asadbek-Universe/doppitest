@@ -17,6 +17,7 @@ export const useDashboardSummary = () => {
       const [
         newUsersRange,
         pendingCenters,
+        centersPendingOnboarding,
         recentActivity,
         newCoursesRange,
         newTestsRange,
@@ -30,11 +31,19 @@ export const useDashboardSummary = () => {
           .order('created_at', { ascending: false })
           .limit(5),
 
-        // Pending center verifications
+        // Pending center verifications (status = pending or not verified)
         supabase
           .from('educational_centers')
           .select('id, name, created_at')
           .eq('is_verified', false)
+          .order('created_at', { ascending: false })
+          .limit(5),
+
+        // Centers that have not completed onboarding
+        supabase
+          .from('educational_centers')
+          .select('id, name, created_at')
+          .eq('onboarding_completed', false)
           .order('created_at', { ascending: false })
           .limit(5),
 
@@ -91,6 +100,11 @@ export const useDashboardSummary = () => {
         .select('id', { count: 'exact', head: true })
         .eq('is_verified', false);
 
+      const { count: pendingOnboardingCount } = await supabase
+        .from('educational_centers')
+        .select('id', { count: 'exact', head: true })
+        .eq('onboarding_completed', false);
+
       // Get total new users in the range count
       const { count: newUsersRangeCount } = await supabase
         .from('profiles')
@@ -105,6 +119,10 @@ export const useDashboardSummary = () => {
         pendingVerifications: {
           count: pendingCount ?? 0,
           items: pendingCenters.data || [],
+        },
+        centersPendingOnboarding: {
+          count: pendingOnboardingCount ?? 0,
+          items: centersPendingOnboarding.data || [],
         },
         recentActivity: enrichedActivity,
         rangeStats: {

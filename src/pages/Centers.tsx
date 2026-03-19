@@ -17,6 +17,7 @@ import {
 import { usePublicCenters } from "@/hooks/usePublicCenter";
 
 import centerCover from "@/assets/center-cover.jpg";
+import heroBg from "@/assets/hero-bg.jpg";
 
 const tabs = ["All", "Centers", "Universities", "Teachers"];
 
@@ -34,44 +35,54 @@ const Centers: FC = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="pt-20 md:pt-24 pb-12 bg-gradient-hero">
-        <div className="container px-6">
+      {/* Hero Section with background picture */}
+      <section className="relative pt-20 md:pt-24 pb-12 min-h-[420px] md:min-h-[480px] flex flex-col justify-center overflow-hidden">
+        {/* Background image layer */}
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${heroBg})` }}
+          aria-hidden
+        />
+        {/* Overlay for readability */}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
+        <div className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_50%_30%,hsl(var(--primary)/0.25),transparent_60%)]" />
+
+        <div className="container relative z-10 px-6">
           <motion.div
             className="max-w-3xl mx-auto text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+            <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-md mb-4">
               Discover Educational Centers & Teachers
             </h1>
-            <p className="text-muted-foreground text-lg mb-8">
+            <p className="text-white/90 text-lg mb-8 drop-shadow-sm">
               Find the best educational institutions, universities, and expert teachers to support your learning journey
             </p>
 
             {/* Search */}
             <div className="relative max-w-2xl mx-auto mb-8">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/80" />
               <input
                 type="text"
                 placeholder="Search centers, universities, or teachers..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-14 pl-12 pr-28 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-md"
+                className="w-full h-14 pl-12 pr-28 rounded-2xl bg-white/95 border border-white/20 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 shadow-lg"
               />
-              <Button className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90">
+              <Button className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-primary-foreground">
                 Search
               </Button>
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2 flex-wrap">
               {tabs.map((tab) => (
                 <Button
                   key={tab}
                   variant={activeTab === tab ? "default" : "outline"}
                   onClick={() => setActiveTab(tab)}
-                  className="rounded-full"
+                  className={`rounded-full ${activeTab !== tab ? "border-white/40 text-white bg-white/10 hover:bg-white/20 hover:text-white" : ""}`}
                 >
                   {tab}
                 </Button>

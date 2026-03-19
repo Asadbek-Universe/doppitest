@@ -15,6 +15,7 @@ import {
   AlertCircle,
   TrendingUp,
   ArrowRight,
+  ListTodo,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,12 +28,14 @@ type Props = {
   onNavigateToPending?: () => void;
   onNavigateToUsers?: () => void;
   onNavigateToActivity?: () => void;
+  onNavigateToCenters?: () => void;
 };
 
 export const DashboardSummaryWidget: FC<Props> = ({
   onNavigateToPending,
   onNavigateToUsers,
   onNavigateToActivity,
+  onNavigateToCenters,
 }) => {
   const { data, isLoading, isError, refetch } = useDashboardSummary();
 
@@ -72,7 +75,7 @@ export const DashboardSummaryWidget: FC<Props> = ({
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3].map(i => (
           <div key={i} className="rounded-xl border border-border/50 bg-card p-5">
             <div className="flex items-start justify-between">
@@ -106,7 +109,7 @@ export const DashboardSummaryWidget: FC<Props> = ({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {/* New Users (last 30 days) */}
       <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-5 transition-all hover:border-border hover:shadow-md">
         <div className="flex items-start justify-between">
@@ -211,6 +214,58 @@ export const DashboardSummaryWidget: FC<Props> = ({
             onClick={onNavigateToPending}
           >
             Review pending
+            <ArrowRight className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+
+      {/* Centers pending onboarding */}
+      <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-5 transition-all hover:border-border hover:shadow-md">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground">Pending onboarding</h3>
+            <div className="mt-1 flex items-center gap-2">
+              <p className="text-3xl font-bold tracking-tight">{data?.centersPendingOnboarding?.count ?? 0}</p>
+              {(data?.centersPendingOnboarding?.count ?? 0) > 0 && (
+                <Badge variant="secondary" className="text-[10px]">
+                  Incomplete
+                </Badge>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground/80">centers have not completed setup</p>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+            <ListTodo className="h-5 w-5 text-blue-500" />
+          </div>
+        </div>
+        {(data?.centersPendingOnboarding?.items?.length ?? 0) > 0 ? (
+          <ScrollArea className="mt-4 h-[88px]">
+            <div className="space-y-1.5">
+              {data?.centersPendingOnboarding?.items?.map((center: { id: string; name: string; created_at: string }) => (
+                <div
+                  key={center.id}
+                  className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-muted/50"
+                >
+                  <span className="truncate max-w-[140px] font-medium">{center.name || 'Unnamed'}</span>
+                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatDistanceToNow(new Date(center.created_at), { addSuffix: true })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        ) : (
+          <p className="mt-4 text-xs text-muted-foreground italic">All centers completed onboarding</p>
+        )}
+        {onNavigateToCenters && (data?.centersPendingOnboarding?.count ?? 0) > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-3 w-full justify-between text-xs"
+            onClick={onNavigateToCenters}
+          >
+            View centers
             <ArrowRight className="h-3 w-3" />
           </Button>
         )}

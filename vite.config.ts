@@ -5,9 +5,14 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: '/', // added by me
   server: {
-    host: "127.0.0.1",
-    port: 8080,
+    host: 'localhost',
+    port: Number(process.env.VITE_DEV_PORT ?? 8080),
+    strictPort: false,
+    // When dev server starts, open auth page instead of whatever
+    // URL the browser last visited (avoids landing on broken /admin).
+    open: '/auth',
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, Mail, Lock, Eye, EyeOff, ArrowLeft, GraduationCap, Trophy, Users, Building2, User } from 'lucide-react';
+import doppiLogo from '@/assets/doppi-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +33,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [selectedUserType, setSelectedUserType] = useState<UserType>('student');
+  const [centerName, setCenterName] = useState('');
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -44,43 +46,67 @@ const Auth = () => {
     const checkOnboardingAndRedirect = async () => {
       if (!user || roleLoading) return;
 
-      // If just signed up, redirect to onboarding
       if (justSignedUp) {
-        navigate('/onboarding');
+        navigate(userRole === 'center' ? '/onboarding/center' : '/onboarding/user');
         return;
       }
 
       setCheckingOnboarding(true);
       
       try {
-        if (userRole === 'center') {
-          // Check if center has completed onboarding
+        const effectiveRole = userRole ?? null;
+
+        if (effectiveRole === 'center') {
           const { data: center } = await supabase
             .from('educational_centers')
             .select('onboarding_completed')
             .eq('owner_id', user.id)
-            .single();
+            .maybeSingle();
           
           if (!center || !center.onboarding_completed) {
-            navigate('/onboarding');
+            navigate('/onboarding/center');
           } else {
             navigate('/center-panel');
           }
-        } else if (userRole === 'admin') {
+          return;
+        }
+
+        if (effectiveRole === 'admin') {
           navigate('/admin');
-        } else {
-          // Check if student has completed onboarding
-          const { data: profile } = await supabase
-            .from('profiles')
+          return;
+        }
+
+        // When role is null or 'user', check if they own a center (e.g. just signed up as center) so we send them to center onboarding
+        if (effectiveRole === null || effectiveRole === 'user') {
+          const { data: ownedCenter } = await supabase
+            .from('educational_centers')
             .select('onboarding_completed')
-            .eq('user_id', user.id)
-            .single();
-          
-          if (!profile || !profile.onboarding_completed) {
-            navigate('/onboarding');
-          } else {
-            navigate('/');
+            .eq('owner_id', user.id)
+            .maybeSingle();
+          if (ownedCenter) {
+            if (!ownedCenter.onboarding_completed) {
+              navigate('/onboarding/center');
+            } else {
+              navigate('/center-panel');
+            }
+            return;
           }
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (profileError) {
+          console.warn("Failed to fetch profile onboarding status:", profileError);
+        }
+
+        if (!profile || !profile.onboarding_completed) {
+          navigate('/onboarding/user');
+        } else {
+          navigate('/dashboard');
         }
       } finally {
         setCheckingOnboarding(false);
@@ -119,10 +145,17 @@ const Auth = () => {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          if (error.message.includes('Invalid login credentials')) {
+          const msg = error.message || '';
+          if (msg.includes('Invalid login credentials')) {
             toast({
               title: "Login Failed",
               description: "Invalid email or password. Please try again.",
+              variant: "destructive",
+            });
+          } else if (/rate limit|too many requests/i.test(msg)) {
+            toast({
+              title: "Try again shortly",
+              description: "Please wait a moment and try again.",
               variant: "destructive",
             });
           } else {
@@ -139,12 +172,33 @@ const Auth = () => {
           });
         }
       } else {
-        const { error } = await signUp(email, password, selectedUserType);
+        if (selectedUserType === 'center' && !centerName.trim()) {
+          toast({
+            title: "Center name required",
+            description: "Please enter your center name to continue.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const { error, user: createdUser, requiresConfirmation, session } = await signUp(
+          email,
+          password,
+          selectedUserType,
+          selectedUserType === 'center' ? { centerName: centerName.trim(), centerEmail: email.trim() } : undefined
+        );
         if (error) {
-          if (error.message.includes('already registered')) {
+          const msg = error.message || '';
+          if (msg.includes('already registered')) {
             toast({
               title: "Account Exists",
               description: "This email is already registered. Please log in instead.",
+              variant: "destructive",
+            });
+          } else if (/rate limit|too many requests/i.test(msg)) {
+            toast({
+              title: "Try again shortly",
+              description: "Please wait a moment and try again.",
               variant: "destructive",
             });
           } else {
@@ -155,11 +209,41 @@ const Auth = () => {
             });
           }
         } else {
-          setJustSignedUp(true);
-          toast({
-            title: "Account Created!",
-            description: "Let's set up your profile.",
-          });
+          let centerCreated = true;
+          if (selectedUserType === 'center' && createdUser) {
+            if (session) {
+              const { error: centerError } = await supabase.rpc('create_center_for_signup', {
+                center_email: email.trim(),
+                center_name: centerName.trim(),
+              });
+
+              if (centerError) {
+                centerCreated = false;
+                const friendlyMessage = centerError.code === '42501'
+                  ? 'Permission denied. Please try again or contact support.'
+                  : centerError.code === '23505'
+                    ? 'A center with this name or owner already exists.'
+                    : centerError.message || 'Could not create center record.';
+                toast({
+                  title: "Center setup failed",
+                  description: friendlyMessage,
+                  variant: "destructive",
+                });
+              }
+            }
+            // When no session (email confirmation required), trigger already created the center from metadata
+          }
+
+          if (centerCreated || selectedUserType !== 'center') {
+            await supabase.auth.signOut();
+            toast({
+              title: "Account Created!",
+              description: requiresConfirmation
+                ? "Please check your email and confirm your account to sign in."
+                : "Please log in to continue.",
+            });
+            navigate('/auth');
+          }
         }
       }
     } finally {
@@ -188,10 +272,8 @@ const Auth = () => {
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-3"
           >
-            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-              <BookOpen className="h-8 w-8 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-white">IMTS.uz</span>
+            <img src={doppiLogo} alt="Doppi" className="h-12 w-12 rounded-full object-contain ring-2 ring-white/30" />
+            <span className="text-2xl font-bold text-white">Doppi</span>
           </motion.div>
         </div>
 
@@ -231,7 +313,7 @@ const Auth = () => {
         </div>
 
         <div className="relative z-10 text-white/60 text-sm">
-          © 2024 IMTS.uz. All rights reserved.
+          © 2024 Doppi. All rights reserved.
         </div>
       </div>
 
@@ -254,10 +336,8 @@ const Auth = () => {
           <Card className="border-0 shadow-lg">
             <CardHeader className="space-y-1 pb-4">
               <div className="lg:hidden flex items-center gap-2 mb-4">
-                <div className="p-2 bg-primary rounded-lg">
-                  <BookOpen className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-bold">IMTS.uz</span>
+                <img src={doppiLogo} alt="Doppi" className="h-9 w-9 rounded-full object-contain" />
+                <span className="text-xl font-bold text-primary">Doppi</span>
               </div>
               
               {/* Role Selector */}
@@ -294,6 +374,17 @@ const Auth = () => {
             
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
+                {!isLogin && selectedUserType === 'center' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="center-name">Center name</Label>
+                    <Input
+                      id="center-name"
+                      placeholder="Your center's name"
+                      value={centerName}
+                      onChange={(e) => setCenterName(e.target.value)}
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -346,7 +437,7 @@ const Auth = () => {
                   className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                  {isLoading ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
                 </Button>
                 
                 <p className="text-sm text-muted-foreground text-center">

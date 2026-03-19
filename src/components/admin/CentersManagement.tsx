@@ -278,8 +278,8 @@ export const CentersManagement: FC<CentersManagementProps> = ({
       </div>
 
       {/* Main Card */}
-      <Card className="border-none shadow-lg">
-        <CardHeader className="pb-4">
+      <Card className="border-none shadow-lg rounded-2xl">
+        <CardHeader className="pb-4 border-b border-border/60">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -340,10 +340,10 @@ export const CentersManagement: FC<CentersManagementProps> = ({
           </div>
 
           {/* Table */}
-          <div className="rounded-xl border border-border/50 overflow-hidden">
-            <Table>
+          <div className="rounded-2xl border border-border/60 overflow-hidden">
+          <Table className="min-w-full text-sm">
               <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="w-12">
                     <Checkbox
                       checked={paginatedCenters?.length ? selectedCenters.size === paginatedCenters.length : false}
@@ -370,7 +370,7 @@ export const CentersManagement: FC<CentersManagementProps> = ({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: idx * 0.02 }}
-                      className="group border-b transition-colors hover:bg-muted/50"
+                      className="group border-b border-border/40 transition-colors hover:bg-muted/40"
                     >
                       <TableCell>
                         <Checkbox

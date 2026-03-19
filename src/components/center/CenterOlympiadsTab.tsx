@@ -1,9 +1,10 @@
 import { FC, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Trophy, Plus, Calendar, Users, Lock, Globe, Clock, Settings, 
   Send, Edit2, Trash2, AlertCircle, CheckCircle, XCircle, FileCheck,
-  Eye
+  Eye, ListChecks
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +51,7 @@ import {
 import { useCreateOlympiad } from '@/hooks/useCenterData';
 import { useSubmitForApproval, useUpdateOlympiad, useDeleteOlympiad, useResubmitOlympiad } from '@/hooks/useOlympiadApproval';
 import { OlympiadParticipantsManager } from './OlympiadParticipantsManager';
+import { OlympiadQuestionsManager } from './OlympiadQuestionsManager';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -61,6 +64,7 @@ interface Olympiad {
   id: string;
   title: string;
   description?: string | null;
+  subject_id?: string | null;
   start_date: string;
   end_date: string;
   registration_deadline?: string | null;
@@ -100,18 +104,34 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingOlympiad, setEditingOlympiad] = useState<Olympiad | null>(null);
   const [selectedOlympiad, setSelectedOlympiad] = useState<Olympiad | null>(null);
+  const [manageQuestionsOlympiad, setManageQuestionsOlympiad] = useState<Olympiad | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [olympiadToDelete, setOlympiadToDelete] = useState<Olympiad | null>(null);
+  const [formStep, setFormStep] = useState(1);
   const [form, setForm] = useState({
     title: '',
     description: '',
     subject_id: '',
+    grade: '',
+    language: 'en',
+    difficulty_level: '',
+    thumbnail_url: '',
+    banner_url: '',
     start_date: '',
     end_date: '',
+    registration_start_date: '',
     registration_deadline: '',
     max_participants: '',
     entry_code: '',
     is_public: true,
+    duration_minutes: '',
+    auto_submit_when_time_ends: true,
+    allow_back_navigation: true,
+    shuffle_questions: true,
+    shuffle_options: true,
+    show_results_immediately: false,
+    show_correct_after_submit: false,
+    anti_cheat_disable_copy_paste: true,
     prize_description: '',
     rules: '',
   });
@@ -122,7 +142,14 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
   const resubmitOlympiad = useResubmitOlympiad();
   const deleteOlympiad = useDeleteOlympiad();
 
-  // If managing participants, show the participant manager
+  if (manageQuestionsOlympiad) {
+    return (
+      <OlympiadQuestionsManager
+        olympiad={manageQuestionsOlympiad}
+        onBack={() => setManageQuestionsOlympiad(null)}
+      />
+    );
+  }
   if (selectedOlympiad) {
     return (
       <OlympiadParticipantsManager
@@ -133,16 +160,31 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
   }
 
   const resetForm = () => {
+    setFormStep(1);
     setForm({
       title: '',
       description: '',
       subject_id: '',
+      grade: '',
+      language: 'en',
+      difficulty_level: '',
+      thumbnail_url: '',
+      banner_url: '',
       start_date: '',
       end_date: '',
+      registration_start_date: '',
       registration_deadline: '',
       max_participants: '',
       entry_code: '',
       is_public: true,
+      duration_minutes: '',
+      auto_submit_when_time_ends: true,
+      allow_back_navigation: true,
+      shuffle_questions: true,
+      shuffle_options: true,
+      show_results_immediately: false,
+      show_correct_after_submit: false,
+      anti_cheat_disable_copy_paste: true,
       prize_description: '',
       rules: '',
     });
@@ -151,19 +193,40 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
 
   const openEditDialog = (olympiad: Olympiad) => {
     setEditingOlympiad(olympiad);
+    const o = olympiad as Olympiad & {
+      grade?: string; language?: string; difficulty_level?: string; thumbnail_url?: string; banner_url?: string;
+      registration_start_date?: string; duration_minutes?: number; auto_submit_when_time_ends?: boolean;
+      allow_back_navigation?: boolean; shuffle_questions?: boolean; shuffle_options?: boolean;
+      show_results_immediately?: boolean; show_correct_after_submit?: boolean; anti_cheat_disable_copy_paste?: boolean;
+    };
     setForm({
       title: olympiad.title,
       description: olympiad.description || '',
-      subject_id: '',
+      subject_id: olympiad.subject_id || '',
+      grade: o.grade || '',
+      language: o.language || 'en',
+      difficulty_level: o.difficulty_level || '',
+      thumbnail_url: o.thumbnail_url || '',
+      banner_url: o.banner_url || '',
       start_date: olympiad.start_date ? olympiad.start_date.slice(0, 16) : '',
       end_date: olympiad.end_date ? olympiad.end_date.slice(0, 16) : '',
+      registration_start_date: o.registration_start_date ? o.registration_start_date.slice(0, 16) : '',
       registration_deadline: olympiad.registration_deadline ? olympiad.registration_deadline.slice(0, 16) : '',
       max_participants: olympiad.max_participants?.toString() || '',
       entry_code: olympiad.entry_code || '',
       is_public: olympiad.is_public,
+      duration_minutes: o.duration_minutes?.toString() || '',
+      auto_submit_when_time_ends: o.auto_submit_when_time_ends ?? true,
+      allow_back_navigation: o.allow_back_navigation ?? true,
+      shuffle_questions: o.shuffle_questions ?? true,
+      shuffle_options: o.shuffle_options ?? true,
+      show_results_immediately: o.show_results_immediately ?? false,
+      show_correct_after_submit: o.show_correct_after_submit ?? false,
+      anti_cheat_disable_copy_paste: o.anti_cheat_disable_copy_paste ?? true,
       prize_description: olympiad.prize_description || '',
       rules: olympiad.rules || '',
     });
+    setFormStep(1);
     setDialogOpen(true);
   };
 
@@ -179,12 +242,27 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
           olympiadId: editingOlympiad.id,
           title: form.title,
           description: form.description || undefined,
+          subject_id: form.subject_id || undefined,
+          grade: form.grade || undefined,
+          language: form.language || undefined,
+          difficulty_level: form.difficulty_level || undefined,
+          thumbnail_url: form.thumbnail_url || undefined,
+          banner_url: form.banner_url || undefined,
           start_date: form.start_date,
           end_date: form.end_date,
+          registration_start_date: form.registration_start_date || undefined,
           registration_deadline: form.registration_deadline || undefined,
           max_participants: form.max_participants ? parseInt(form.max_participants) : undefined,
           entry_code: form.entry_code || undefined,
           is_public: form.is_public,
+          duration_minutes: form.duration_minutes ? parseInt(form.duration_minutes) : undefined,
+          auto_submit_when_time_ends: form.auto_submit_when_time_ends,
+          allow_back_navigation: form.allow_back_navigation,
+          shuffle_questions: form.shuffle_questions,
+          shuffle_options: form.shuffle_options,
+          show_results_immediately: form.show_results_immediately,
+          show_correct_after_submit: form.show_correct_after_submit,
+          anti_cheat_disable_copy_paste: form.anti_cheat_disable_copy_paste,
           prize_description: form.prize_description || undefined,
           rules: form.rules || undefined,
         });
@@ -194,12 +272,26 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
           title: form.title,
           description: form.description || undefined,
           subject_id: form.subject_id || undefined,
+          grade: form.grade || undefined,
+          language: form.language || undefined,
+          difficulty_level: form.difficulty_level || undefined,
+          thumbnail_url: form.thumbnail_url || undefined,
+          banner_url: form.banner_url || undefined,
           start_date: form.start_date,
           end_date: form.end_date,
+          registration_start_date: form.registration_start_date || undefined,
           registration_deadline: form.registration_deadline || undefined,
           max_participants: form.max_participants ? parseInt(form.max_participants) : undefined,
           entry_code: form.entry_code || undefined,
           is_public: form.is_public,
+          duration_minutes: form.duration_minutes ? parseInt(form.duration_minutes) : undefined,
+          auto_submit_when_time_ends: form.auto_submit_when_time_ends,
+          allow_back_navigation: form.allow_back_navigation,
+          shuffle_questions: form.shuffle_questions,
+          shuffle_options: form.shuffle_options,
+          show_results_immediately: form.show_results_immediately,
+          show_correct_after_submit: form.show_correct_after_submit,
+          anti_cheat_disable_copy_paste: form.anti_cheat_disable_copy_paste,
           prize_description: form.prize_description || undefined,
           rules: form.rules || undefined,
         });
@@ -245,14 +337,14 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
                 <div className="p-3 rounded-full bg-amber-500/20">
                   <Lock className="w-6 h-6 text-amber-600" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">Olympiad Creation Locked</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Upgrade your plan to Pro or Enterprise to create olympiads
+                <div className="flex-1">
+                  <h3 className="font-semibold">Olympiad creation requires permission</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your current plan does not include organizing olympiads. Upgrade to Pro or Enterprise to create and manage olympiads, then submit them for admin approval.
                   </p>
                 </div>
-                <Button className="ml-auto" size="sm">
-                  Upgrade Plan
+                <Button className="shrink-0" size="sm" variant="outline" asChild>
+                  <Link to="/center-panel/profile">View plan</Link>
                 </Button>
               </div>
             </CardContent>
@@ -283,131 +375,173 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
                     Create Olympiad
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>
                       {editingOlympiad ? 'Edit Olympiad' : 'Create New Olympiad'}
                     </DialogTitle>
                     <DialogDescription>
                       {editingOlympiad 
-                        ? 'Update olympiad details. You can submit for approval after saving.'
-                        : 'Create a draft olympiad. You\'ll need to submit it for admin approval before it goes live.'}
+                        ? 'Update olympiad details. Use Manage Questions to add questions, then submit for approval.'
+                        : 'Configure all sections. After saving, add questions and submit for admin approval.'}
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Title *</Label>
-                      <Input
-                        value={form.title}
-                        onChange={(e) => setForm({ ...form, title: e.target.value })}
-                        placeholder="Olympiad title"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Textarea
-                        value={form.description}
-                        onChange={(e) => setForm({ ...form, description: e.target.value })}
-                        placeholder="About the olympiad..."
-                        rows={3}
-                      />
-                    </div>
-                    {!editingOlympiad && (
+                  <Tabs value={String(formStep)} onValueChange={(v) => setFormStep(parseInt(v, 10))} className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="1">Basic</TabsTrigger>
+                      <TabsTrigger value="2">Registration</TabsTrigger>
+                      <TabsTrigger value="3">Schedule</TabsTrigger>
+                      <TabsTrigger value="4">Rules</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="1" className="space-y-4 pt-4">
                       <div className="space-y-2">
-                        <Label>Subject</Label>
-                        <Select
-                          value={form.subject_id}
-                          onValueChange={(value) => setForm({ ...form, subject_id: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select subject" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {subjects.map((subject) => (
-                              <SelectItem key={subject.id} value={subject.id}>
-                                {subject.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Start Date *</Label>
-                        <Input
-                          type="datetime-local"
-                          value={form.start_date}
-                          onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                        />
+                        <Label>Title *</Label>
+                        <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Olympiad title" />
                       </div>
                       <div className="space-y-2">
-                        <Label>End Date *</Label>
-                        <Input
-                          type="datetime-local"
-                          value={form.end_date}
-                          onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                        />
+                        <Label>Description</Label>
+                        <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="About the olympiad..." rows={2} />
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Subject</Label>
+                          <Select value={form.subject_id} onValueChange={(v) => setForm({ ...form, subject_id: v })}>
+                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectContent>
+                              {subjects.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Grade</Label>
+                          <Input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="e.g. 9th" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Language</Label>
+                          <Select value={form.language} onValueChange={(v) => setForm({ ...form, language: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="en">English</SelectItem>
+                              <SelectItem value="uz">O'zbek</SelectItem>
+                              <SelectItem value="ru">Русский</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Difficulty</Label>
+                          <Select value={form.difficulty_level} onValueChange={(v) => setForm({ ...form, difficulty_level: v })}>
+                            <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="easy">Easy</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="hard">Hard</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Thumbnail URL</Label>
+                          <Input value={form.thumbnail_url} onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })} placeholder="https://..." />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Banner URL (optional)</Label>
+                          <Input value={form.banner_url} onChange={(e) => setForm({ ...form, banner_url: e.target.value })} placeholder="https://..." />
+                        </div>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="2" className="space-y-4 pt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Registration start</Label>
+                          <Input type="datetime-local" value={form.registration_start_date} onChange={(e) => setForm({ ...form, registration_start_date: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Registration deadline</Label>
+                          <Input type="datetime-local" value={form.registration_deadline} onChange={(e) => setForm({ ...form, registration_deadline: e.target.value })} />
+                        </div>
+                      </div>
                       <div className="space-y-2">
-                        <Label>Registration Deadline</Label>
-                        <Input
-                          type="datetime-local"
-                          value={form.registration_deadline}
-                          onChange={(e) => setForm({ ...form, registration_deadline: e.target.value })}
-                        />
+                        <Label>Max participants (optional)</Label>
+                        <Input type="number" value={form.max_participants} onChange={(e) => setForm({ ...form, max_participants: e.target.value })} placeholder="Unlimited" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                        <div>
+                          <p className="font-medium text-sm">Public (anyone can register)</p>
+                          <p className="text-xs text-muted-foreground">Turn off for private / invite code</p>
+                        </div>
+                        <Switch checked={form.is_public} onCheckedChange={(c) => setForm({ ...form, is_public: c })} />
+                      </div>
+                      {!form.is_public && (
+                        <div className="space-y-2">
+                          <Label>Invite / entry code</Label>
+                          <Input value={form.entry_code} onChange={(e) => setForm({ ...form, entry_code: e.target.value })} placeholder="Secret code" />
+                        </div>
+                      )}
+                    </TabsContent>
+                    <TabsContent value="3" className="space-y-4 pt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Start date & time *</Label>
+                          <Input type="datetime-local" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>End date & time *</Label>
+                          <Input type="datetime-local" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+                        </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>Max Participants</Label>
-                        <Input
-                          type="number"
-                          value={form.max_participants}
-                          onChange={(e) => setForm({ ...form, max_participants: e.target.value })}
-                          placeholder="Unlimited"
-                        />
+                        <Label>Duration (minutes)</Label>
+                        <Input type="number" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })} placeholder="e.g. 60" />
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                      <div>
-                        <p className="font-medium text-sm">Public Olympiad</p>
-                        <p className="text-xs text-muted-foreground">Anyone can view and register</p>
+                      <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                        <div>
+                          <p className="font-medium text-sm">Auto-submit when time ends</p>
+                          <p className="text-xs text-muted-foreground">Submit attempt automatically when timer reaches zero</p>
+                        </div>
+                        <Switch checked={form.auto_submit_when_time_ends} onCheckedChange={(c) => setForm({ ...form, auto_submit_when_time_ends: c })} />
                       </div>
-                      <Switch
-                        checked={form.is_public}
-                        onCheckedChange={(checked) => setForm({ ...form, is_public: checked })}
-                      />
-                    </div>
-                    {!form.is_public && (
+                    </TabsContent>
+                    <TabsContent value="4" className="space-y-4 pt-4">
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <span className="text-sm">Allow back navigation</span>
+                        <Switch checked={form.allow_back_navigation} onCheckedChange={(c) => setForm({ ...form, allow_back_navigation: c })} />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <span className="text-sm">Shuffle questions</span>
+                        <Switch checked={form.shuffle_questions} onCheckedChange={(c) => setForm({ ...form, shuffle_questions: c })} />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <span className="text-sm">Shuffle options</span>
+                        <Switch checked={form.shuffle_options} onCheckedChange={(c) => setForm({ ...form, shuffle_options: c })} />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <span className="text-sm">Show results immediately</span>
+                        <Switch checked={form.show_results_immediately} onCheckedChange={(c) => setForm({ ...form, show_results_immediately: c })} />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <span className="text-sm">Show correct answers after submit</span>
+                        <Switch checked={form.show_correct_after_submit} onCheckedChange={(c) => setForm({ ...form, show_correct_after_submit: c })} />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <span className="text-sm">Anti-cheat (disable copy/paste)</span>
+                        <Switch checked={form.anti_cheat_disable_copy_paste} onCheckedChange={(c) => setForm({ ...form, anti_cheat_disable_copy_paste: c })} />
+                      </div>
                       <div className="space-y-2">
-                        <Label>Entry Code</Label>
-                        <Input
-                          value={form.entry_code}
-                          onChange={(e) => setForm({ ...form, entry_code: e.target.value })}
-                          placeholder="Secret code for registration"
-                        />
+                        <Label>Prize description</Label>
+                        <Textarea value={form.prize_description} onChange={(e) => setForm({ ...form, prize_description: e.target.value })} placeholder="What do winners receive?" rows={2} />
                       </div>
-                    )}
-                    <div className="space-y-2">
-                      <Label>Prize Description</Label>
-                      <Textarea
-                        value={form.prize_description}
-                        onChange={(e) => setForm({ ...form, prize_description: e.target.value })}
-                        placeholder="What do winners receive?"
-                        rows={2}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Rules</Label>
-                      <Textarea
-                        value={form.rules}
-                        onChange={(e) => setForm({ ...form, rules: e.target.value })}
-                        placeholder="Competition rules..."
-                        rows={3}
-                      />
-                    </div>
-                    <DialogFooter>
+                      <div className="space-y-2">
+                        <Label>Rules</Label>
+                        <Textarea value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} placeholder="Competition rules..." rows={3} />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                  <DialogFooter>
                       <Button 
                         onClick={handleCreate} 
                         disabled={createOlympiad.isPending || updateOlympiad.isPending} 
@@ -418,7 +552,6 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
                           : editingOlympiad ? 'Save Changes' : 'Create Draft'}
                       </Button>
                     </DialogFooter>
-                  </div>
                 </DialogContent>
               </Dialog>
             )}
@@ -505,6 +638,18 @@ export const CenterOlympiadsTab: FC<CenterOlympiadsTabProps> = ({
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {/* Manage Questions (draft/rejected) */}
+                            {canEdit(olympiad) && canCreate && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => setManageQuestionsOlympiad(olympiad)}
+                                title="Manage Questions"
+                              >
+                                <ListChecks className="w-4 h-4" />
+                              </Button>
+                            )}
                             {/* View/Manage Participants */}
                             {(olympiad.approval_status === 'published' || olympiad.approval_status === 'approved') && (
                               <Button

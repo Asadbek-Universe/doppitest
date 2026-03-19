@@ -378,13 +378,13 @@ export const usePublishTest = () => {
   });
 };
 
-// Create center (used during onboarding)
+// Create center (used during onboarding / center panel)
 export const useCreateCenter = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (centerData: any) => {
+    mutationFn: async (centerData: { name: string; [key: string]: unknown }) => {
       if (!user?.id) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
@@ -392,18 +392,23 @@ export const useCreateCenter = () => {
         .insert({
           name: centerData.name,
           owner_id: user.id,
-          status: 'REGISTERED',
-          metadata: centerData.metadata || {},
+          status: 'pending',
+          onboarding_completed: false,
         })
         .select()
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        const msg = error.message || 'Failed to create center';
+        if (error.code === '23505') throw new Error('You already have a center linked to this account.');
+        throw new Error(msg);
+      }
 
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-centers'] });
+      queryClient.invalidateQueries({ queryKey: ['my-center'] });
     },
   });
 };
@@ -502,7 +507,7 @@ export const useMyCenterTests = (centerId?: string | null) => {
   });
 };
 
-// My center enrollments (students)
+// My center enrollments (students) – works with or without course_enrollments.center_id
 export const useMyCenterEnrollments = () => {
   const { user } = useAuth();
   return useQuery({
@@ -518,18 +523,37 @@ export const useMyCenterEnrollments = () => {
 
       if (!center) return [];
 
-      const { data, error } = await supabase
+      let data: unknown[] | null = null;
+      let error: { message: string } | null = null;
+
+      const byCenterId = await supabase
         .from('course_enrollments')
         .select('*')
         .eq('center_id', center.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching my center enrollments:', error);
-        return [];
+      if (byCenterId.error) {
+        const { data: courseIds } = await supabase
+          .from('courses')
+          .select('id')
+          .eq('center_id', center.id);
+        const ids = (courseIds ?? []).map((c) => c.id);
+        if (ids.length === 0) return [];
+        const byCourse = await supabase
+          .from('course_enrollments')
+          .select('*')
+          .in('course_id', ids)
+          .order('created_at', { ascending: false });
+        if (byCourse.error) {
+          console.error('Error fetching my center enrollments:', byCourse.error);
+          return [];
+        }
+        data = byCourse.data;
+      } else {
+        data = byCenterId.data;
       }
 
-      return data || [];
+      return data ?? [];
     },
     enabled: !!user?.id,
   });
@@ -745,18 +769,25 @@ export const useDeleteLesson = () => {
   });
 };
 
-// Center analytics
-export const useCenterAnalytics = (centerId?: string | null) => {
+// Center analytics – per-day timeseries from center_analytics
+export const useCenterAnalytics = (centerId?: string | null, days: number = 30) => {
   return useQuery({
-    queryKey: ['center-analytics', centerId],
+    queryKey: ['center-analytics', centerId, days],
     queryFn: async () => {
-      if (!centerId) return null;
-      return {
-        courses: 0,
-        students: 0,
-        totalEnrollments: 0,
-        testsTaken: 0,
-      };
+      if (!centerId) return [];
+
+      const from = new Date();
+      from.setDate(from.getDate() - days + 1);
+
+      const { data, error } = await supabase
+        .from('center_analytics')
+        .select('*')
+        .eq('center_id', centerId)
+        .gte('date', from.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      return data ?? [];
     },
     enabled: !!centerId,
   });
@@ -766,7 +797,71 @@ export const useCenterAnalytics = (centerId?: string | null) => {
 export const useCreateOlympiad = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: any) => ({ id: 'mock', ...data }),
+    mutationFn: async (data: {
+      center_id: string;
+      title: string;
+      description?: string;
+      subject_id?: string;
+      grade?: string;
+      language?: string;
+      difficulty_level?: string;
+      thumbnail_url?: string;
+      banner_url?: string;
+      start_date: string;
+      end_date: string;
+      registration_start_date?: string;
+      registration_deadline?: string;
+      max_participants?: number;
+      entry_code?: string;
+      is_public?: boolean;
+      duration_minutes?: number;
+      auto_submit_when_time_ends?: boolean;
+      allow_back_navigation?: boolean;
+      shuffle_questions?: boolean;
+      shuffle_options?: boolean;
+      show_results_immediately?: boolean;
+      show_correct_after_submit?: boolean;
+      anti_cheat_disable_copy_paste?: boolean;
+      prize_description?: string;
+      rules?: string;
+    }) => {
+      const { data: row, error } = await supabase
+        .from('olympiads')
+        .insert({
+          center_id: data.center_id,
+          title: data.title,
+          description: data.description ?? null,
+          subject_id: data.subject_id || null,
+          grade: data.grade ?? null,
+          language: data.language ?? 'en',
+          difficulty_level: data.difficulty_level ?? null,
+          thumbnail_url: data.thumbnail_url ?? null,
+          banner_url: data.banner_url ?? null,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          registration_start_date: data.registration_start_date ?? null,
+          registration_deadline: data.registration_deadline ?? null,
+          max_participants: data.max_participants ?? null,
+          entry_code: data.entry_code ?? null,
+          is_public: data.is_public ?? true,
+          duration_minutes: data.duration_minutes ?? null,
+          auto_submit_when_time_ends: data.auto_submit_when_time_ends ?? true,
+          allow_back_navigation: data.allow_back_navigation ?? true,
+          shuffle_questions: data.shuffle_questions ?? true,
+          shuffle_options: data.shuffle_options ?? true,
+          show_results_immediately: data.show_results_immediately ?? false,
+          show_correct_after_submit: data.show_correct_after_submit ?? false,
+          anti_cheat_disable_copy_paste: data.anti_cheat_disable_copy_paste ?? true,
+          prize_description: data.prize_description ?? null,
+          rules: data.rules ?? null,
+          approval_status: 'draft',
+          status: 'draft',
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return { id: row.id, ...data };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['center-olympiads'] });
     },
@@ -776,7 +871,16 @@ export const useCreateOlympiad = () => {
 export const useCenterOlympiads = (centerId?: string | null) => {
   return useQuery({
     queryKey: ['center-olympiads', centerId],
-    queryFn: async () => [],
+    queryFn: async () => {
+      if (!centerId) return [];
+      const { data, error } = await supabase
+        .from('olympiads')
+        .select('*, subjects(name)')
+        .eq('center_id', centerId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((o) => ({ ...o, current_participants: o.current_participants ?? 0 }));
+    },
     enabled: !!centerId,
   });
 };
@@ -784,52 +888,216 @@ export const useCenterOlympiads = (centerId?: string | null) => {
 export const useOlympiadParticipantsForCenter = (olympiadId?: string | null) => {
   return useQuery({
     queryKey: ['olympiad-participants', olympiadId],
-    queryFn: async () => [],
+    queryFn: async () => {
+      if (!olympiadId) return [];
+      const { data: regs, error } = await supabase
+        .from('olympiad_registrations')
+        .select('id, user_id, registered_at, status, score, rank')
+        .eq('olympiad_id', olympiadId)
+        .order('registered_at', { ascending: false });
+      if (error) throw error;
+      const userIds = [...new Set((regs ?? []).map((r) => r.user_id))];
+      let names: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name')
+          .in('user_id', userIds);
+        names = (profiles ?? []).reduce((acc, p) => {
+          acc[p.user_id] = p.display_name || 'Unknown';
+          return acc;
+        }, {} as Record<string, string>);
+      }
+      return (regs ?? []).map((r) => ({ ...r, display_name: names[r.user_id] ?? 'Unknown' }));
+    },
     enabled: !!olympiadId,
   });
 };
 
 export const useUpdateParticipantScore = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: any) => data,
+    mutationFn: async (payload: { registrationId: string; olympiadId: string; score: number | null; rank: number | null }) => {
+      const { error } = await supabase
+        .from('olympiad_registrations')
+        .update({ score: payload.score, rank: payload.rank })
+        .eq('id', payload.registrationId)
+        .eq('olympiad_id', payload.olympiadId);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['olympiad-participants', variables.olympiadId] });
+    },
   });
 };
 
 export const useUpdateParticipantStatus = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: any) => data,
+    mutationFn: async (payload: { registrationId: string; olympiadId: string; status: string }) => {
+      const { error } = await supabase
+        .from('olympiad_registrations')
+        .update({ status: payload.status })
+        .eq('id', payload.registrationId)
+        .eq('olympiad_id', payload.olympiadId);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['olympiad-participants', variables.olympiadId] });
+    },
   });
 };
 
 export const useBulkUpdateParticipantStatus = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: any) => data,
+    mutationFn: async (payload: { registrationIds: string[]; olympiadId: string; status: string }) => {
+      if (payload.registrationIds.length === 0) return;
+      const { error } = await supabase
+        .from('olympiad_registrations')
+        .update({ status: payload.status })
+        .eq('olympiad_id', payload.olympiadId)
+        .in('id', payload.registrationIds);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['olympiad-participants', variables.olympiadId] });
+    },
   });
 };
 
 // Reels
 export const useCreateReel = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: any) => data,
+    mutationFn: async ({
+      center_id,
+      title,
+      description,
+      video_url,
+      thumbnail_url,
+      duration_seconds,
+      subject_id,
+      grades,
+    }: {
+      center_id: string;
+      title: string;
+      description?: string;
+      video_url: string;
+      thumbnail_url?: string;
+      duration_seconds?: number;
+      subject_id?: string;
+      grades?: string[];
+    }) => {
+      const { data, error } = await supabase
+        .from('center_reels')
+        .insert({
+          center_id,
+          title,
+          description: description ?? null,
+          video_url,
+          thumbnail_url: thumbnail_url ?? null,
+          duration_seconds: duration_seconds ?? null,
+          subject_id: subject_id ?? null,
+          grades: grades ?? [],
+          is_published: false,
+          approval_status: 'draft',
+          views_count: 0,
+          likes_count: 0,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['center-reels', variables.center_id] });
+    },
   });
 };
 
 export const useUpdateReel = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: any) => data,
+    mutationFn: async ({
+      reelId,
+      centerId,
+      title,
+      description,
+      video_url,
+      thumbnail_url,
+      duration_seconds,
+      subject_id,
+      grades,
+    }: {
+      reelId: string;
+      centerId: string;
+      title?: string;
+      description?: string;
+      video_url?: string;
+      thumbnail_url?: string;
+      duration_seconds?: number;
+      subject_id?: string;
+      grades?: string[];
+    }) => {
+      const updates: Record<string, unknown> = {};
+      if (title !== undefined) updates.title = title;
+      if (description !== undefined) updates.description = description;
+      if (video_url !== undefined) updates.video_url = video_url;
+      if (thumbnail_url !== undefined) updates.thumbnail_url = thumbnail_url;
+      if (duration_seconds !== undefined) updates.duration_seconds = duration_seconds;
+      if (subject_id !== undefined) updates.subject_id = subject_id;
+      if (grades !== undefined) updates.grades = grades;
+
+      const { data, error } = await supabase
+        .from('center_reels')
+        .update(updates)
+        .eq('id', reelId)
+        .eq('center_id', centerId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['center-reels', variables.centerId] });
+    },
   });
 };
 
 export const useDeleteReel = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => id,
+    mutationFn: async ({ reelId, centerId }: { reelId: string; centerId: string }) => {
+      const { error } = await supabase
+        .from('center_reels')
+        .delete()
+        .eq('id', reelId)
+        .eq('center_id', centerId);
+      if (error) throw error;
+      return reelId;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['center-reels', variables.centerId] });
+    },
   });
 };
 
 export const useCenterReels = (centerId?: string | null) => {
   return useQuery({
     queryKey: ['center-reels', centerId],
-    queryFn: async () => [],
+    queryFn: async () => {
+      if (!centerId) return [];
+      const { data, error } = await supabase
+        .from('center_reels')
+        .select('*, subjects(name)')
+        .eq('center_id', centerId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
     enabled: !!centerId,
   });
 };
@@ -850,7 +1118,16 @@ export const useRequestPlanUpgrade = () => {
 export const useCenterSubscription = (centerId?: string | null) => {
   return useQuery({
     queryKey: ['center-subscription', centerId],
-    queryFn: async () => null,
+    queryFn: async () => {
+      if (!centerId) return null;
+      const { data, error } = await supabase
+        .from('center_subscriptions')
+        .select('*')
+        .eq('center_id', centerId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
     enabled: !!centerId,
   });
 };

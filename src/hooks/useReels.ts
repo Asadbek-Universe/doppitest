@@ -38,6 +38,7 @@ export const usePublishedReels = (subjectFilter?: string) => {
           center:educational_centers(id, name, logo_url)
         `)
         .eq("is_published", true)
+        .eq("approval_status", "published")
         .order("created_at", { ascending: false });
 
       if (subjectFilter && subjectFilter !== "all") {

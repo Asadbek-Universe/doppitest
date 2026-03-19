@@ -124,6 +124,7 @@ export const usePublicCenterReels = (centerId: string | undefined) => {
         .select('*, subjects(name)')
         .eq('center_id', centerId)
         .eq('is_published', true)
+        .eq('approval_status', 'published')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

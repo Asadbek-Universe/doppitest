@@ -26,7 +26,10 @@ export const GameStats: FC<GameStatsProps> = ({ gameType = "math_challenge" }) =
         .eq("game_type", gameType)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.warn("Game stats fetch failed:", error.message);
+        return null;
+      }
       if (!data || data.length === 0) return null;
 
       const scores = data.map((d) => d.score);
@@ -59,6 +62,7 @@ export const GameStats: FC<GameStatsProps> = ({ gameType = "math_challenge" }) =
       };
     },
     enabled: !!user,
+    retry: false,
   });
 
   if (!user) {

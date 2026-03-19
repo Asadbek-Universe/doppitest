@@ -43,12 +43,26 @@ export const useUpdateOlympiad = () => {
       title?: string;
       description?: string;
       subject_id?: string;
+      grade?: string;
+      language?: string;
+      difficulty_level?: string;
+      thumbnail_url?: string;
+      banner_url?: string;
       start_date?: string;
       end_date?: string;
+      registration_start_date?: string;
       registration_deadline?: string;
       max_participants?: number;
       entry_code?: string;
       is_public?: boolean;
+      duration_minutes?: number;
+      auto_submit_when_time_ends?: boolean;
+      allow_back_navigation?: boolean;
+      shuffle_questions?: boolean;
+      shuffle_options?: boolean;
+      show_results_immediately?: boolean;
+      show_correct_after_submit?: boolean;
+      anti_cheat_disable_copy_paste?: boolean;
       prize_description?: string;
       rules?: string;
     }) => {

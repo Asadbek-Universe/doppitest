@@ -525,9 +525,22 @@ const TestHistory: FC = () => {
                               <h3 className="font-semibold text-foreground truncate">
                                 {attempt.tests?.title || "Unknown Test"}
                               </h3>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Calendar className="w-3 h-3" />
-                                <span>{format(new Date(attempt.started_at), "MMM d, yyyy")}</span>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                                <Calendar className="w-3 h-3 shrink-0" />
+                                <span>
+                                  {attempt.status === "completed" && attempt.completed_at
+                                    ? format(new Date(attempt.completed_at), "MMM d, yyyy")
+                                    : format(new Date(attempt.started_at), "MMM d, yyyy")}
+                                </span>
+                                {attempt.status === "completed" && attempt.time_spent_seconds != null && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {formatTime(attempt.time_spent_seconds)}
+                                    </span>
+                                  </>
+                                )}
                                 {attempt.tests && (
                                   <>
                                     <span>•</span>
@@ -570,9 +583,9 @@ const TestHistory: FC = () => {
             <Card className="text-center py-12">
               <CardContent>
                 <FileText className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">No test attempts yet</h3>
+                <h3 className="text-xl font-semibold text-foreground mb-2">No tests taken yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  Start taking tests to see your history here
+                  Start solving tests to track your progress.
                 </p>
                 <Link to="/tests">
                   <Button>Browse Tests</Button>

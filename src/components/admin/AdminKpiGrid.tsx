@@ -11,7 +11,7 @@ type Kpi = {
 
 export function AdminKpiGrid({ items, className }: { items: Kpi[]; className?: string }) {
   return (
-    <div className={cn("grid grid-cols-2 gap-4 lg:grid-cols-4", className)}>
+    <div className={cn("grid grid-cols-2 gap-6 lg:grid-cols-4", className)}>
       {items.map((k) => (
         <div 
           key={k.label} 

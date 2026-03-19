@@ -60,7 +60,6 @@ export const TestCreationWizard: FC<TestCreationWizardProps> = ({
     shuffle_questions: true,
     max_attempts: null as number | null,
     passing_score_percent: 60,
-    is_published: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -208,7 +207,7 @@ export const TestCreationWizard: FC<TestCreationWizardProps> = ({
 
   const handlePublish = async () => {
     if (!canPublish()) {
-      toast.error('Add at least one question with a correct answer before publishing.');
+      toast.error('Add at least one question with a correct answer before submitting for approval.');
       return;
     }
     if (!testId) return;
@@ -220,9 +219,11 @@ export const TestCreationWizard: FC<TestCreationWizardProps> = ({
         shuffle_questions: settings.shuffle_questions,
         max_attempts: settings.max_attempts,
         passing_score_percent: settings.passing_score_percent,
-        is_published: true,
+        is_published: false,
+        approval_status: 'pending_approval',
+        submitted_for_approval_at: new Date().toISOString(),
       });
-      toast.success('Test published');
+      toast.success('Test submitted for admin approval');
       onSuccess?.();
       onClose();
     } catch {

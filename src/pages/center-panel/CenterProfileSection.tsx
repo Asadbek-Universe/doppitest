@@ -21,13 +21,19 @@ export const CenterProfileSection: FC = () => {
   }
 
   return (
-    <CenterProfileTab
-      center={center}
-      subscription={subscription ?? null}
-      coursesCount={courses?.length ?? 0}
-      testsCount={tests?.length ?? 0}
-      reelsCount={reels?.length ?? 0}
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Center profile</h1>
+        <p className="text-sm text-muted-foreground mt-1">Your center&apos;s public information — separate from your personal account profile.</p>
+      </div>
+      <CenterProfileTab
+        center={center}
+        subscription={subscription ?? null}
+        coursesCount={courses?.length ?? 0}
+        testsCount={tests?.length ?? 0}
+        reelsCount={reels?.length ?? 0}
+      />
+    </div>
   );
 };
 

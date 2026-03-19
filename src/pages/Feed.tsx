@@ -51,6 +51,7 @@ import courseChemistry from "@/assets/course-chemistry.jpg";
 import reel1 from "@/assets/reel-1.jpg";
 import reel2 from "@/assets/reel-2.jpg";
 import reel3 from "@/assets/reel-3.jpg";
+import doppiLogo from "@/assets/doppi-logo.png";
 
 // Fallback data
 const fallbackImages = [courseMath, coursePhysics, courseEnglish, courseChemistry];
@@ -525,10 +526,8 @@ const Feed: FC = () => {
         <div className="container px-4 md:px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-                <span className="text-lg font-extrabold text-primary-foreground">D</span>
-              </div>
-              <span className="font-bold text-lg">Doppi</span>
+              <img src={doppiLogo} alt="Doppi" className="h-8 w-8 rounded-full object-contain" />
+              <span className="font-bold text-lg text-primary">Doppi</span>
             </div>
             <p className="text-sm text-muted-foreground text-center">
               © 2024 Doppi. Made with ❤️ in Uzbekistan.

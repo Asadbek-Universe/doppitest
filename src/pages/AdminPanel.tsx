@@ -1,5 +1,5 @@
-import { FC, useMemo, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { FC, useMemo, useState, useEffect } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -21,10 +21,11 @@ import {
   Trash2,
   Search,
   WalletCards,
+  Trophy,
 } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsAdmin } from '@/hooks/useUserRole';
+import { useIsAdmin, useAdminRole } from '@/hooks/useUserRole';
 import {
   useAllUsers,
   useAllCourses,
@@ -109,12 +110,26 @@ import { QuickActionsPanel } from '@/components/admin/QuickActionsPanel';
 import { CenterApprovalPanel } from '@/components/admin/CenterApprovalPanel';
 import { TariffApprovalPanel } from '@/components/admin/TariffApprovalPanel';
 import { OlympiadsManagement } from '@/components/admin/OlympiadsManagement';
+import { ReelsManagement } from '@/components/admin/ReelsManagement';
+import { CourseTestApprovalPanel } from '@/components/admin/CourseTestApprovalPanel';
 import { usePendingTariffRequests } from '@/hooks/useTariffApproval';
 
 const AdminPanel: FC = () => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, isLoading: roleLoading } = useIsAdmin();
-  const [activeTab, setActiveTab] = useState<AdminTabKey>('dashboard');
+  const { data: adminRole } = useAdminRole();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const pathToTab = (path: string): AdminTabKey => {
+    if (path.endsWith('/users')) return 'users';
+    if (path.endsWith('/centers')) return 'centers';
+    if (path.endsWith('/courses')) return 'courses';
+    if (path.endsWith('/olympiads')) return 'olympiads';
+    return 'dashboard';
+  };
+
+  const [activeTab, setActiveTab] = useState<AdminTabKey>(() => pathToTab(location.pathname));
   const [subjectDialogOpen, setSubjectDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<{
     id?: string;
@@ -326,13 +341,64 @@ const AdminPanel: FC = () => {
   const pendingTariffCount = pendingTariffRequests?.length ?? 0;
   const totalPendingCount = pendingCentersCount + pendingTariffCount;
 
+  useEffect(() => {
+    const next = pathToTab(location.pathname);
+    if (next !== activeTab) {
+      setActiveTab(next);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleTabChange = (next: AdminTabKey) => {
+    setActiveTab(next);
+    switch (next) {
+      case 'users':
+        navigate('/admin/users');
+        break;
+      case 'centers':
+        navigate('/admin/centers');
+        break;
+      case 'courses':
+        navigate('/admin/courses');
+        break;
+      case 'olympiads':
+        navigate('/admin/olympiads');
+        break;
+      case 'analytics':
+      case 'payments':
+      case 'pending':
+      case 'tests':
+      case 'subjects':
+      case 'activity':
+      case 'dashboard':
+      default:
+        navigate('/admin/dashboard');
+        break;
+    }
+  };
+
+  const effectiveAdminRole = adminRole ?? 'super_admin';
+
+  const allowedTabsByRole: Record<string, AdminTabKey[]> = {
+    super_admin: ['dashboard', 'analytics', 'payments', 'pending', 'users', 'subjects', 'courses', 'tests', 'centers', 'olympiads', 'activity'],
+    moderator: ['dashboard', 'analytics', 'pending', 'users', 'centers', 'olympiads', 'courses', 'tests', 'activity'],
+    content_reviewer: ['dashboard', 'pending', 'olympiads', 'courses', 'tests', 'activity'],
+    finance_admin: ['dashboard', 'analytics', 'payments', 'centers', 'activity'],
+  };
+
+  const allowedTabs = allowedTabsByRole[effectiveAdminRole] ?? allowedTabsByRole.super_admin;
+
   // KPI data - must be before early returns to satisfy hooks rules
   const overviewKpis = useMemo(
     () => [
       {
-        label: 'Total Users',
+        label: 'Total users',
         value: stats?.usersCount ?? 0,
         icon: <Users className="h-4 w-4 text-primary" />,
+      },
+      {
+        label: 'Active users (7d)',
+        value: stats?.activeUsers7d ?? 0,
+        icon: <Activity className="h-4 w-4 text-primary" />,
       },
       {
         label: 'Centers',
@@ -340,14 +406,29 @@ const AdminPanel: FC = () => {
         icon: <Building2 className="h-4 w-4 text-primary" />,
       },
       {
-        label: 'Enrollments',
-        value: stats?.enrollmentsCount ?? 0,
-        icon: <TrendingUp className="h-4 w-4 text-primary" />,
+        label: 'Pending centers',
+        value: stats?.pendingCentersCount ?? 0,
+        icon: <Shield className="h-4 w-4 text-primary" />,
       },
       {
-        label: 'Test attempts',
-        value: stats?.attemptsCount ?? 0,
-        icon: <Shield className="h-4 w-4 text-primary" />,
+        label: 'Courses',
+        value: stats?.coursesCount ?? 0,
+        icon: <BookOpen className="h-4 w-4 text-primary" />,
+      },
+      {
+        label: 'Pending courses',
+        value: stats?.pendingCoursesCount ?? 0,
+        icon: <ClipboardList className="h-4 w-4 text-primary" />,
+      },
+      {
+        label: 'Olympiads',
+        value: stats?.olympiadsCount ?? 0,
+        icon: <Trophy className="h-4 w-4 text-primary" />,
+      },
+      {
+        label: 'Reels',
+        value: stats?.reelsCount ?? 0,
+        icon: <Activity className="h-4 w-4 text-primary" />,
       },
     ],
     [stats],
@@ -733,11 +814,16 @@ const AdminPanel: FC = () => {
   };
 
   return (
-    <SidebarProvider defaultOpen>
-      <div className="flex min-h-screen w-full bg-background">
-        <AdminSidebar value={activeTab} onChange={setActiveTab} pendingCentersCount={totalPendingCount} />
+    <SidebarProvider defaultOpen className="bg-slate-50 dark:bg-background">
+      <div className="grid min-h-screen w-full grid-cols-[260px,1fr]">
+        <AdminSidebar
+          value={activeTab}
+          onChange={handleTabChange}
+          pendingCentersCount={totalPendingCount}
+          allowedTabs={allowedTabs}
+        />
 
-        <SidebarInset className="flex-1">
+        <SidebarInset className="flex min-h-screen flex-col bg-[#F8FAFC]">
           <AdminHeader
             activeTab={activeTab}
             dateRange={dateRange}
@@ -750,12 +836,12 @@ const AdminPanel: FC = () => {
             lastUpdated={new Date()}
           />
 
-          <main className="px-6 pb-12 pt-6">
-            <motion.div 
-              initial={{ opacity: 0, y: 8 }} 
-              animate={{ opacity: 1, y: 0 }} 
+          <main className="w-full px-10 pb-12 pt-8">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="mx-auto max-w-7xl space-y-6"
+              className="w-full space-y-6"
             >
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AdminTabKey)}>
                 {/* keep old tab content wiring, sidebar is the "TabsList" */}
@@ -765,6 +851,7 @@ const AdminPanel: FC = () => {
                     onNavigateToPending={() => setActiveTab('pending')}
                     onNavigateToUsers={() => setActiveTab('users')}
                     onNavigateToActivity={() => setActiveTab('activity')}
+                    onNavigateToCenters={() => setActiveTab('centers')}
                   />
 
                   <QuickActionsPanel
@@ -964,6 +1051,18 @@ const AdminPanel: FC = () => {
                 <div>
                   <h2 className="text-lg font-semibold mb-4">Tarif tasdiqlash so'rovlari</h2>
                   <TariffApprovalPanel />
+                </div>
+
+                {/* Course & Test Approvals */}
+                <div>
+                  <h2 className="text-lg font-semibold mb-4">Kurs va test tasdiqlash</h2>
+                  <CourseTestApprovalPanel />
+                </div>
+
+                {/* Reels Moderation */}
+                <div>
+                  <h2 className="text-lg font-semibold mb-4">Reels moderatsiyasi</h2>
+                  <ReelsManagement />
                 </div>
               </div>
             </TabsContent>

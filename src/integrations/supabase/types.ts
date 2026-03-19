@@ -135,6 +135,7 @@ export type Database = {
           created_at: string
           description: string | null
           duration_seconds: number | null
+          grades: string[] | null
           id: string
           is_published: boolean
           likes_count: number
@@ -144,12 +145,18 @@ export type Database = {
           updated_at: string
           video_url: string
           views_count: number
+          approval_status: string
+          rejection_reason: string | null
+          approved_at: string | null
+          approved_by: string | null
+          submitted_for_approval_at: string | null
         }
         Insert: {
           center_id: string
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          grades?: string[] | null
           id?: string
           is_published?: boolean
           likes_count?: number
@@ -159,12 +166,18 @@ export type Database = {
           updated_at?: string
           video_url: string
           views_count?: number
+          approval_status?: string
+          rejection_reason?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          submitted_for_approval_at?: string | null
         }
         Update: {
           center_id?: string
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          grades?: string[] | null
           id?: string
           is_published?: boolean
           likes_count?: number
@@ -174,6 +187,11 @@ export type Database = {
           updated_at?: string
           video_url?: string
           views_count?: number
+          approval_status?: string
+          rejection_reason?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          submitted_for_approval_at?: string | null
         }
         Relationships: [
           {
@@ -312,6 +330,7 @@ export type Database = {
       }
       course_enrollments: {
         Row: {
+          center_id: string | null
           completed_at: string | null
           course_id: string
           enrolled_at: string
@@ -319,6 +338,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          center_id?: string | null
           completed_at?: string | null
           course_id: string
           enrolled_at?: string
@@ -326,6 +346,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          center_id?: string | null
           completed_at?: string | null
           course_id?: string
           enrolled_at?: string
@@ -335,6 +356,48 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_center_id_fkey"
+            columns: ["center_id"]
+            isOneToOne: false
+            referencedRelation: "educational_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_modules: {
+        Row: {
+          id: string
+          course_id: string
+          title: string
+          order_index: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          course_id: string
+          title: string
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          course_id?: string
+          title?: string
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_modules_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
@@ -443,6 +506,11 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           updated_at: string
+          approval_status: string
+          rejection_reason: string | null
+          approved_at: string | null
+          approved_by: string | null
+          submitted_for_approval_at: string | null
         }
         Insert: {
           center_id?: string | null
@@ -468,6 +536,11 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           updated_at?: string
+          approval_status?: string
+          rejection_reason?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          submitted_for_approval_at?: string | null
         }
         Update: {
           center_id?: string | null
@@ -493,6 +566,11 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
+          approval_status?: string
+          rejection_reason?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          submitted_for_approval_at?: string | null
         }
         Relationships: [
           {
@@ -516,6 +594,7 @@ export type Database = {
           address: string | null
           approved_at: string | null
           approved_by: string | null
+          banner_url: string | null
           city: string | null
           contact_phone: string | null
           created_at: string
@@ -523,8 +602,10 @@ export type Database = {
           email: string | null
           followers_count: number
           founded_year: number | null
+          grades_served: string[] | null
           id: string
           is_verified: boolean | null
+          languages_supported: string[] | null
           logo_url: string | null
           name: string
           onboarding_completed: boolean | null
@@ -535,6 +616,7 @@ export type Database = {
           specializations: string[] | null
           status: Database["public"]["Enums"]["center_status"]
           student_count: number | null
+          teachers_count: number | null
           updated_at: string
           website: string | null
         }
@@ -542,6 +624,7 @@ export type Database = {
           address?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          banner_url?: string | null
           city?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -549,8 +632,10 @@ export type Database = {
           email?: string | null
           followers_count?: number
           founded_year?: number | null
+          grades_served?: string[] | null
           id?: string
           is_verified?: boolean | null
+          languages_supported?: string[] | null
           logo_url?: string | null
           name: string
           onboarding_completed?: boolean | null
@@ -561,6 +646,7 @@ export type Database = {
           specializations?: string[] | null
           status?: Database["public"]["Enums"]["center_status"]
           student_count?: number | null
+          teachers_count?: number | null
           updated_at?: string
           website?: string | null
         }
@@ -568,6 +654,7 @@ export type Database = {
           address?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          banner_url?: string | null
           city?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -575,8 +662,10 @@ export type Database = {
           email?: string | null
           followers_count?: number
           founded_year?: number | null
+          grades_served?: string[] | null
           id?: string
           is_verified?: boolean | null
+          languages_supported?: string[] | null
           logo_url?: string | null
           name?: string
           onboarding_completed?: boolean | null
@@ -587,6 +676,7 @@ export type Database = {
           specializations?: string[] | null
           status?: Database["public"]["Enums"]["center_status"]
           student_count?: number | null
+          teachers_count?: number | null
           updated_at?: string
           website?: string | null
         }
@@ -799,6 +889,121 @@ export type Database = {
           },
         ]
       }
+      olympiad_attempts: {
+        Row: {
+          id: string
+          olympiad_id: string
+          user_id: string
+          started_at: string
+          completed_at: string | null
+          time_spent_seconds: number | null
+          score: number | null
+          total_points: number | null
+          correct_count: number | null
+          wrong_count: number | null
+          status: string
+          answers_snapshot: unknown
+        }
+        Insert: {
+          id?: string
+          olympiad_id: string
+          user_id: string
+          started_at?: string
+          completed_at?: string | null
+          time_spent_seconds?: number | null
+          score?: number | null
+          total_points?: number | null
+          correct_count?: number | null
+          wrong_count?: number | null
+          status?: string
+          answers_snapshot?: unknown
+        }
+        Update: {
+          id?: string
+          olympiad_id?: string
+          user_id?: string
+          started_at?: string
+          completed_at?: string | null
+          time_spent_seconds?: number | null
+          score?: number | null
+          total_points?: number | null
+          correct_count?: number | null
+          wrong_count?: number | null
+          status?: string
+          answers_snapshot?: unknown
+        }
+        Relationships: [
+          {
+            foreignKeyName: "olympiad_attempts_olympiad_id_fkey"
+            columns: ["olympiad_id"]
+            isOneToOne: false
+            referencedRelation: "olympiads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      olympiad_questions: {
+        Row: {
+          id: string
+          olympiad_id: string
+          question_type: string
+          question_text: string
+          image_url: string | null
+          options: unknown
+          correct_answer: unknown
+          points: number
+          topic: string | null
+          difficulty: string | null
+          explanation: string | null
+          section: string | null
+          order_index: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          olympiad_id: string
+          question_type: string
+          question_text: string
+          image_url?: string | null
+          options?: unknown
+          correct_answer?: unknown
+          points?: number
+          topic?: string | null
+          difficulty?: string | null
+          explanation?: string | null
+          section?: string | null
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          olympiad_id?: string
+          question_type?: string
+          question_text?: string
+          image_url?: string | null
+          options?: unknown
+          correct_answer?: unknown
+          points?: number
+          topic?: string | null
+          difficulty?: string | null
+          explanation?: string | null
+          section?: string | null
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "olympiad_questions_olympiad_id_fkey"
+            columns: ["olympiad_id"]
+            isOneToOne: false
+            referencedRelation: "olympiads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       olympiads: {
         Row: {
           approval_status: string
@@ -824,6 +1029,20 @@ export type Database = {
           submitted_for_approval_at: string | null
           title: string
           updated_at: string
+          grade: string | null
+          language: string | null
+          difficulty_level: string | null
+          thumbnail_url: string | null
+          banner_url: string | null
+          registration_start_date: string | null
+          duration_minutes: number | null
+          auto_submit_when_time_ends: boolean | null
+          allow_back_navigation: boolean | null
+          shuffle_questions: boolean | null
+          shuffle_options: boolean | null
+          show_results_immediately: boolean | null
+          show_correct_after_submit: boolean | null
+          anti_cheat_disable_copy_paste: boolean | null
         }
         Insert: {
           approval_status?: string
@@ -849,6 +1068,20 @@ export type Database = {
           submitted_for_approval_at?: string | null
           title: string
           updated_at?: string
+          grade?: string | null
+          language?: string | null
+          difficulty_level?: string | null
+          thumbnail_url?: string | null
+          banner_url?: string | null
+          registration_start_date?: string | null
+          duration_minutes?: number | null
+          auto_submit_when_time_ends?: boolean | null
+          allow_back_navigation?: boolean | null
+          shuffle_questions?: boolean | null
+          shuffle_options?: boolean | null
+          show_results_immediately?: boolean | null
+          show_correct_after_submit?: boolean | null
+          anti_cheat_disable_copy_paste?: boolean | null
         }
         Update: {
           approval_status?: string
@@ -874,6 +1107,20 @@ export type Database = {
           submitted_for_approval_at?: string | null
           title?: string
           updated_at?: string
+          grade?: string | null
+          language?: string | null
+          difficulty_level?: string | null
+          thumbnail_url?: string | null
+          banner_url?: string | null
+          registration_start_date?: string | null
+          duration_minutes?: number | null
+          auto_submit_when_time_ends?: boolean | null
+          allow_back_navigation?: boolean | null
+          shuffle_questions?: boolean | null
+          shuffle_options?: boolean | null
+          show_results_immediately?: boolean | null
+          show_correct_after_submit?: boolean | null
+          anti_cheat_disable_copy_paste?: boolean | null
         }
         Relationships: [
           {
@@ -902,15 +1149,22 @@ export type Database = {
           created_at: string
           display_name: string | null
           gender: string | null
+          goals: string | null
           grade: string | null
           id: string
+          interests: string[] | null
           last_activity_at: string | null
           onboarding_completed: boolean | null
           phone: string | null
+          preferred_language: string | null
+          preparing_for_olympiads: boolean | null
           purpose: string | null
+          school: string | null
           studies_at_center: boolean | null
+          study_time_per_day_minutes: number | null
           updated_at: string
           user_id: string
+          weak_subjects: string[] | null
         }
         Insert: {
           avatar_url?: string | null
@@ -921,15 +1175,22 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           gender?: string | null
+          goals?: string | null
           grade?: string | null
           id?: string
+          interests?: string[] | null
           last_activity_at?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          preferred_language?: string | null
+          preparing_for_olympiads?: boolean | null
           purpose?: string | null
+          school?: string | null
           studies_at_center?: boolean | null
+          study_time_per_day_minutes?: number | null
           updated_at?: string
           user_id: string
+          weak_subjects?: string[] | null
         }
         Update: {
           avatar_url?: string | null
@@ -940,15 +1201,22 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           gender?: string | null
+          goals?: string | null
           grade?: string | null
           id?: string
+          interests?: string[] | null
           last_activity_at?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          preferred_language?: string | null
+          preparing_for_olympiads?: boolean | null
           purpose?: string | null
+          school?: string | null
           studies_at_center?: boolean | null
+          study_time_per_day_minutes?: number | null
           updated_at?: string
           user_id?: string
+          weak_subjects?: string[] | null
         }
         Relationships: []
       }
@@ -1199,6 +1467,11 @@ export type Database = {
           title: string
           total_marks: number | null
           updated_at: string
+          approval_status: string
+          rejection_reason: string | null
+          approved_at: string | null
+          approved_by: string | null
+          submitted_for_approval_at: string | null
         }
         Insert: {
           author_avatar?: string | null
@@ -1224,6 +1497,11 @@ export type Database = {
           title: string
           total_marks?: number | null
           updated_at?: string
+          approval_status?: string
+          rejection_reason?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          submitted_for_approval_at?: string | null
         }
         Update: {
           author_avatar?: string | null
@@ -1249,6 +1527,11 @@ export type Database = {
           title?: string
           total_marks?: number | null
           updated_at?: string
+          approval_status?: string
+          rejection_reason?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          submitted_for_approval_at?: string | null
         }
         Relationships: [
           {
@@ -1396,18 +1679,21 @@ export type Database = {
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
+          admin_role: Database["public"]["Enums"]["admin_role"] | null
         }
         Insert: {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
+          admin_role?: Database["public"]["Enums"]["admin_role"] | null
         }
         Update: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+          admin_role?: Database["public"]["Enums"]["admin_role"] | null
         }
         Relationships: []
       }
@@ -1441,7 +1727,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "center" | "user"
-      center_status: "pending" | "approved" | "rejected" | "active"
+      admin_role: "super_admin" | "moderator" | "content_reviewer" | "finance_admin"
+      center_status: "pending" | "approved" | "rejected" | "active" | "suspended"
       subscription_tier: "free" | "pro" | "enterprise"
     }
     CompositeTypes: {

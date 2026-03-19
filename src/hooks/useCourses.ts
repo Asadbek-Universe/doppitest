@@ -17,7 +17,7 @@ export const useSubjects = () => {
   });
 };
 
-// Fetch all published courses with at least 1 lesson (for public view)
+// Fetch all published, approved courses with at least 1 lesson (for public view)
 export const useCourses = (subjectId?: string) => {
   return useQuery({
     queryKey: ["courses", subjectId],
@@ -34,6 +34,7 @@ export const useCourses = (subjectId?: string) => {
           )
         `)
         .eq("is_published", true)
+        .eq("approval_status", "published")
         .gt("lessons_count", 0)
         .order("created_at", { ascending: false });
 

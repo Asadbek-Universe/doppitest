@@ -1,41 +1,38 @@
 import { FC } from "react";
 import { motion } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
-import { Home, FileText, BookOpen, Play, Building2, Trophy, Gamepad2, User, LogIn, LogOut, Shield, LayoutDashboard, History } from "lucide-react";
+import { Home, FileText, BookOpen, Play, Building2, Trophy, Gamepad2, User, LogIn, LogOut, Shield, LayoutDashboard, History, Settings } from "lucide-react";
+import doppiLogo from "@/assets/doppi-logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const navItems = [{
-  icon: Home,
-  label: "Home",
-  path: "/"
-}, {
-  icon: FileText,
-  label: "Tests",
-  path: "/tests"
-}, {
-  icon: BookOpen,
-  label: "Courses",
-  path: "/courses"
-}, {
-  icon: Play,
-  label: "Reels",
-  path: "/reels"
-}, {
-  icon: Building2,
-  label: "Centers",
-  path: "/centers"
-}, {
-  icon: Trophy,
-  label: "Olympiads",
-  path: "/olympiads"
-}, {
-  icon: Gamepad2,
-  label: "Games",
-  path: "/games"
-}];
+const navItems = [
+  { icon: LayoutDashboard, labelKey: "nav.dashboard", path: "/dashboard" },
+  { icon: BookOpen, labelKey: "nav.courses", path: "/courses" },
+  { icon: FileText, labelKey: "nav.tests", path: "/tests" },
+  { icon: Trophy, labelKey: "nav.olympiads", path: "/olympiads" },
+  { icon: Gamepad2, labelKey: "nav.games", path: "/games" },
+  { icon: Home, labelKey: "nav.home", path: "/" },
+  { icon: Play, labelKey: "nav.reels", path: "/reels" },
+  { icon: Building2, labelKey: "nav.centers", path: "/centers" },
+];
 export const Navbar: FC = () => {
   const location = useLocation();
   const {
@@ -45,6 +42,8 @@ export const Navbar: FC = () => {
   const {
     data: role
   } = useUserRole();
+  const { t } = useTranslation();
+  const { language, setLanguage } = useLanguage();
   const handleSignOut = async () => {
     await signOut();
   };
@@ -62,14 +61,12 @@ export const Navbar: FC = () => {
         <div className="flex items-center gap-8">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <motion.div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center" whileHover={{
-            scale: 1.05
-          }} whileTap={{
-            scale: 0.95
-          }}>
-              <BookOpen className="w-5 h-5 text-primary" />
+            <motion.div className="flex items-center justify-center shrink-0" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <img src={doppiLogo} alt="Doppi" className="h-10 w-10 rounded-full object-contain" />
             </motion.div>
-            <span className="text-xl font-bold text-primary">​Doppi</span>
+            <span className="text-xl font-bold text-primary hidden sm:inline">
+              {t("brand.desktop")}
+            </span>
           </Link>
 
           {/* Navigation Tabs */}
@@ -83,7 +80,7 @@ export const Navbar: FC = () => {
                 scale: 0.98
               }}>
                     <item.icon className="w-4 h-4" />
-                    <span>{item.label}</span>
+                    <span>{t(item.labelKey)}</span>
                   </motion.div>
                 </Link>;
           })}
@@ -91,6 +88,21 @@ export const Navbar: FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden md:block">
+            <Select
+              value={language}
+              onValueChange={(val) => setLanguage(val as any)}
+            >
+              <SelectTrigger className="w-[120px] h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">EN</SelectItem>
+                <SelectItem value="uz">UZ</SelectItem>
+                <SelectItem value="ru">RU</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {user ? <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <motion.div className="relative w-10 h-10 rounded-full bg-primary flex items-center justify-center cursor-pointer" whileHover={{
@@ -111,37 +123,43 @@ export const Navbar: FC = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
-                    Profile
+                    {t("nav.profile")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/test-history" className="cursor-pointer">
                     <History className="mr-2 h-4 w-4" />
-                    Test History
+                    {t("nav.testHistory")}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile?tab=settings" className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    {t("nav.settings")}
                   </Link>
                 </DropdownMenuItem>
                 {role === 'admin' && <DropdownMenuItem asChild>
                     <Link to="/admin" className="cursor-pointer">
                       <Shield className="mr-2 h-4 w-4" />
-                      Admin Panel
+                      {t("nav.adminPanel")}
                     </Link>
                   </DropdownMenuItem>}
                 {role === 'center' && <DropdownMenuItem asChild>
                     <Link to="/center-panel" className="cursor-pointer">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
-                      Center Panel
+                      {t("nav.centerPanel")}
                     </Link>
                   </DropdownMenuItem>}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
+                  {t("nav.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu> : <Link to="/auth">
               <Button variant="default" size="sm" className="gap-2">
                 <LogIn className="w-4 h-4" />
-                Sign In
+                {t("nav.signIn")}
               </Button>
             </Link>}
         </div>
@@ -165,7 +183,7 @@ export const Navbar: FC = () => {
               scale: 0.9
             }}>
                   <item.icon className="w-5 h-5" />
-                  <span className="text-[10px] font-medium">{item.label}</span>
+                  <span className="text-[10px] font-medium">{t(item.labelKey)}</span>
                 </motion.div>
               </Link>;
         })}
@@ -179,10 +197,10 @@ export const Navbar: FC = () => {
       y: 0
     }}>
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-primary" />
-          </div>
-          <span className="text-lg font-bold text-primary">IMTS.uz</span>
+          <img src={doppiLogo} alt="Doppi" className="h-8 w-8 rounded-full object-contain" />
+          <span className="text-lg font-bold text-primary">
+            {t("brand.mobile")}
+          </span>
         </Link>
 
         {user ? <DropdownMenu>
@@ -195,19 +213,25 @@ export const Navbar: FC = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link to="/profile">Profile</Link>
+                <Link to="/profile">{t("nav.profile")}</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/test-history">Test History</Link>
+                <Link to="/test-history">{t("nav.testHistory")}</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/profile?tab=settings">{t("nav.settings")}</Link>
               </DropdownMenuItem>
               {role === 'admin' && <DropdownMenuItem asChild>
-                  <Link to="/admin">Admin Panel</Link>
+                  <Link to="/admin">{t("nav.adminPanel")}</Link>
                 </DropdownMenuItem>}
               {role === 'center' && <DropdownMenuItem asChild>
-                  <Link to="/center-panel">Center Panel</Link>
+                  <Link to="/center-panel">{t("nav.centerPanel")}</Link>
                 </DropdownMenuItem>}
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                Sign Out
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="text-destructive"
+              >
+                {t("nav.signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu> : <Link to="/auth">

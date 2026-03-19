@@ -169,11 +169,15 @@ export const AchievementBadges: FC<AchievementBadgesProps> = ({ showAll = false 
         .from("user_achievements")
         .select("achievement_id")
         .eq("user_id", user.id);
-      
-      if (error) throw error;
-      return data.map((a) => a.achievement_id);
+
+      if (error) {
+        console.warn("Achievements fetch failed:", error.message);
+        return [];
+      }
+      return (data ?? []).map((a) => a.achievement_id);
     },
     enabled: !!user,
+    retry: false,
   });
 
   if (!user) {
@@ -300,11 +304,15 @@ export const useCheckAchievements = () => {
         .from("user_achievements")
         .select("achievement_id")
         .eq("user_id", user.id);
-      
-      if (error) throw error;
-      return data.map((a) => a.achievement_id);
+
+      if (error) {
+        console.warn("Achievements fetch failed:", error.message);
+        return [];
+      }
+      return (data ?? []).map((a) => a.achievement_id);
     },
     enabled: !!user,
+    retry: false,
   });
 
   const unlockMutation = useMutation({

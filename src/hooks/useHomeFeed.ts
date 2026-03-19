@@ -27,10 +27,12 @@ export const useFeaturedTests = () => {
           price,
           completions,
           author_name,
+          approval_status,
           subjects(name, color, icon),
           educational_centers(name, is_verified)
         `)
         .eq("is_published", true)
+        .eq("approval_status", "published")
         .gt("questions_count", 0)
         .order("completions", { ascending: false })
         .limit(6);
@@ -62,10 +64,12 @@ export const useFeaturedCourses = () => {
           is_free,
           is_published,
           price,
+          approval_status,
           subjects(name, color, icon),
           educational_centers(name, is_verified, logo_url)
         `)
         .eq("is_published", true)
+        .eq("approval_status", "published")
         .gt("lessons_count", 0)
         .order("students_count", { ascending: false })
         .limit(6);

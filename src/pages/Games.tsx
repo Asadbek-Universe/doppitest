@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   Users, 
@@ -27,15 +27,19 @@ import { MathGame } from "@/components/MathGame";
 import { GameLeaderboard } from "@/components/GameLeaderboard";
 import { GameStats } from "@/components/GameStats";
 import { AchievementBadges } from "@/components/AchievementBadges";
+import { useUserProgress } from "@/hooks/useUserProgress";
 import { useToast } from "@/hooks/use-toast";
 import { usePreviewMode } from "@/hooks/usePreviewMode";
 import { PreviewModeBanner } from "@/components/PreviewModeBanner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TicTacToeGame } from "@/components/games/TicTacToeGame";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const progressStats = [
-  { icon: Flame, label: "Day Streak", value: "7", color: "text-orange-500", bgColor: "bg-orange-500/20", progress: 70 },
-  { icon: Star, label: "Current Level", value: "12", color: "text-yellow-500", bgColor: "bg-yellow-500/20", progress: 45 },
-  { icon: Coins, label: "Total Coins", value: "2,450", color: "text-emerald-500", bgColor: "bg-emerald-500/20", progress: 60 },
-  { icon: Trophy, label: "Games Won", value: "34", color: "text-purple-500", bgColor: "bg-purple-500/20", progress: 85 },
+const progressStatKeys = [
+  { key: "streak" as const, icon: Flame, label: "Day Streak", color: "text-orange-500", bgColor: "bg-orange-500/20" },
+  { key: "level" as const, icon: Star, label: "Current Level", color: "text-yellow-500", bgColor: "bg-yellow-500/20" },
+  { key: "coins" as const, icon: Coins, label: "Total Coins", color: "text-emerald-500", bgColor: "bg-emerald-500/20" },
+  { key: "games" as const, icon: Trophy, label: "Games Won", color: "text-purple-500", bgColor: "bg-purple-500/20" },
 ];
 
 const featuredGame = {
@@ -50,26 +54,6 @@ const featuredGame = {
 
 const games = [
   {
-    id: 1,
-    title: "Speed Quiz",
-    description: "Answer questions before time runs out",
-    icon: Zap,
-    color: "from-yellow-500 to-orange-500",
-    players: "8.2K",
-    reward: 100,
-    available: false,
-  },
-  {
-    id: 2,
-    title: "Brain Teaser",
-    description: "Logic puzzles to challenge your mind",
-    icon: Brain,
-    color: "from-purple-500 to-pink-500",
-    players: "5.1K",
-    reward: 120,
-    available: false,
-  },
-  {
     id: 3,
     title: "Number Crunch",
     description: "Advanced math calculations",
@@ -80,14 +64,14 @@ const games = [
     available: true,
   },
   {
-    id: 4,
-    title: "Target Practice",
-    description: "Hit the correct answers quickly",
-    icon: Target,
-    color: "from-green-500 to-emerald-500",
-    players: "6.4K",
-    reward: 80,
-    available: false,
+    id: 5,
+    title: "Tic-Tac-Toe (X/O)",
+    description: "Classic X/O game against a simple AI",
+    icon: Gamepad2,
+    color: "from-emerald-500 to-teal-500",
+    players: "2.1K",
+    reward: 50,
+    available: true,
   },
 ];
 
@@ -107,8 +91,18 @@ const itemVariants = {
 const Games: FC = () => {
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
   const [isGameOpen, setIsGameOpen] = useState(false);
+  const [isTicTacToeOpen, setIsTicTacToeOpen] = useState(false);
   const { toast } = useToast();
   const { isPreviewMode, canInteract } = usePreviewMode();
+  const { data: progress, isLoading: progressLoading, isError: progressError } = useUserProgress();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.pathname.endsWith("/tic-tac-toe")) {
+      setIsTicTacToeOpen(true);
+    }
+  }, [location.pathname]);
 
   const handlePlayGame = (gameId?: number) => {
     if (!canInteract) {
@@ -122,6 +116,14 @@ const Games: FC = () => {
     
     if (gameId === 3 || gameId === undefined) {
       setIsGameOpen(true);
+      if (location.pathname.endsWith("/tic-tac-toe")) {
+        navigate("/games", { replace: true });
+      }
+    } else if (gameId === 5) {
+      setIsTicTacToeOpen(true);
+      if (!location.pathname.endsWith("/tic-tac-toe")) {
+        navigate("/games/tic-tac-toe", { replace: true });
+      }
     } else {
       toast({
         title: "Coming Soon!",
@@ -273,6 +275,11 @@ const Games: FC = () => {
 
       {/* Stats and Leaderboard Section */}
       <section className="container px-4 md:px-6 py-12 md:py-16 relative">
+        {progressError && (
+          <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm text-amber-800 dark:text-amber-200">
+            Progress data could not be loaded. You can still play games and view leaderboard.
+          </div>
+        )}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Stats */}
           <div className="lg:col-span-2">
@@ -299,30 +306,64 @@ const Games: FC = () => {
               viewport={{ once: true }}
               className="grid grid-cols-2 gap-4 md:gap-6"
             >
-              {progressStats.map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.02, y: -4 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all duration-300 overflow-hidden group">
-                    <CardContent className="p-5 md:p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className={`p-3 rounded-xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300`}>
-                          <stat.icon className={`w-5 h-5 md:w-6 md:h-6 ${stat.color}`} />
-                        </div>
-                        <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-                          +12%
-                        </span>
-                      </div>
-                      <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{stat.value}</div>
-                      <div className="text-sm text-muted-foreground mb-4">{stat.label}</div>
-                      <Progress value={stat.progress} className="h-1.5" />
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+              {(progressLoading
+                ? progressStatKeys.map(({ key, icon: Icon, label, color, bgColor }) => (
+                    <motion.div key={key} variants={itemVariants}>
+                      <Card className="bg-card/50 backdrop-blur-sm border-border/50 overflow-hidden">
+                        <CardContent className="p-5 md:p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className={`p-3 rounded-xl ${bgColor}`}>
+                              <Icon className={`w-5 h-5 md:w-6 md:h-6 ${color}`} />
+                            </div>
+                          </div>
+                          <Skeleton className="h-8 w-16 mb-1" />
+                          <div className="text-sm text-muted-foreground mb-4">{label}</div>
+                          <Skeleton className="h-1.5 w-full" />
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))
+                : progressStatKeys.map(({ key, icon: Icon, label, color, bgColor }) => {
+                    const stat = progress ?? undefined;
+                    const value =
+                      key === "streak"
+                        ? String(stat?.dayStreak ?? 0)
+                        : key === "level"
+                          ? String(stat?.level ?? 1)
+                          : key === "coins"
+                            ? (stat?.totalCoins ?? 0).toLocaleString()
+                            : String(stat?.gamesWon ?? 0);
+                    const progressPct =
+                      key === "streak"
+                        ? stat?.streakProgress ?? 0
+                        : key === "level"
+                          ? stat?.levelProgress ?? 0
+                          : key === "coins"
+                            ? stat?.coinsProgress ?? 0
+                            : stat?.gamesProgress ?? 0;
+                    return (
+                      <motion.div
+                        key={key}
+                        variants={itemVariants}
+                        whileHover={{ scale: 1.02, y: -4 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                      >
+                        <Card className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all duration-300 overflow-hidden group">
+                          <CardContent className="p-5 md:p-6">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className={`p-3 rounded-xl ${bgColor} group-hover:scale-110 transition-transform duration-300`}>
+                                <Icon className={`w-5 h-5 md:w-6 md:h-6 ${color}`} />
+                              </div>
+                            </div>
+                            <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">{value}</div>
+                            <div className="text-sm text-muted-foreground mb-4">{label}</div>
+                            <Progress value={progressPct} className="h-1.5" />
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    );
+                  })
+              )}
             </motion.div>
           </div>
 
@@ -451,6 +492,15 @@ const Games: FC = () => {
       </section>
       {/* Math Game Modal */}
       <MathGame isOpen={isGameOpen} onClose={() => setIsGameOpen(false)} />
+      <TicTacToeGame
+        isOpen={isTicTacToeOpen}
+        onClose={() => {
+          setIsTicTacToeOpen(false);
+          if (location.pathname.endsWith("/tic-tac-toe")) {
+            navigate("/games", { replace: true });
+          }
+        }}
+      />
     </div>
   );
 };

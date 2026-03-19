@@ -1,4 +1,5 @@
 import { FC, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Building2 } from 'lucide-react';
 import { useCreateCenter } from '@/hooks/useCenterData';
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export const CreateCenterScreen: FC = () => {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -29,7 +31,8 @@ export const CreateCenterScreen: FC = () => {
     }
     try {
       await createCenter.mutateAsync(form);
-      toast.success('Center created successfully');
+      toast.success('Center created. Complete your profile.');
+      navigate('/onboarding/center', { replace: true });
     } catch {
       toast.error('Failed to create center');
     }
