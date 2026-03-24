@@ -117,10 +117,10 @@ const Feed: FC = () => {
             </span>
           </motion.div>
 
-          <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">
-            Discover, Learn, and{" "}
-            <span className="text-gradient-primary">Excel</span>
-          </h1>
+          <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight text-foreground">
+  Discover, Learn, and{" "}
+  <span className="text-gradient-primary">Excel</span>
+</h1>
 
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
             Explore tests, courses, reels, and olympiads from top educational centers
