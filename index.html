@@ -18,12 +18,18 @@
     <meta name="twitter:site" content="@DoppiEdu" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
-    <link rel="canonical" href="https://doppi.uz" />
+    <link rel="canonical" href="https://doppitest.uz" />
+    <script>
+      var redirect = new URLSearchParams(window.location.search).get('redirect');
+      if (redirect) {
+        window.history.replaceState(null, null, redirect);
+      }
+    </script>
     <script type="module" crossorigin src="/assets/index-EqOXpyUg.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-GsAaMwY5.css">
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
   </body>
 </html>
