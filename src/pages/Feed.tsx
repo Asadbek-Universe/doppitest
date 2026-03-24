@@ -484,8 +484,8 @@ const Feed: FC = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <h3 className="font-bold mb-3 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary dark:text-black" />
+              <h3 className="font-bold mb-3 flex items-center gap-2 dark:text-black">
+                <TrendingUp className="w-5 h-5 text-primary" />
                 Daily Challenge
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
