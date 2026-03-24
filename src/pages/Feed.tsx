@@ -117,7 +117,7 @@ const Feed: FC = () => {
             </span>
           </motion.div>
 
-          <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight text-gray-900 dark:text-white">
+          <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight text-gray-900 dark:text-black">
   Discover, Learn, and{" "}
   <span className="text-gradient-primary">Excel</span>
 </h1>
@@ -485,7 +485,7 @@ const Feed: FC = () => {
               transition={{ delay: 0.5 }}
             >
               <h3 className="font-bold mb-3 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
+                <TrendingUp className="w-5 h-5 text-primary dark:text-black" />
                 Daily Challenge
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
