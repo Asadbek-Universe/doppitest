@@ -17,7 +17,7 @@ import {
 import { usePublicCenters } from "@/hooks/usePublicCenter";
 
 import centerCover from "@/assets/center-cover.jpg";
-import heroBg from "@/assets/center-cover.jpg";
+import heroBg from "@/assets/hero-bg.jpg";
 
 const tabs = ["All", "Centers", "Universities", "Teachers"];
 
