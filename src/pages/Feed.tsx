@@ -501,22 +501,26 @@ const Feed: FC = () => {
 
             {/* Educator CTA */}
             <motion.div
-              className="p-5 rounded-xl bg-gradient-primary text-primary-foreground"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <h3 className="font-bold mb-2">Are you an educator?</h3>
-              <p className="text-sm opacity-90 mb-4">
-                Create courses, tests, and reach thousands of students.
-              </p>
-              <Button variant="glass" className="w-full text-primary-foreground border-primary-foreground/20" asChild>
-                <Link to="/center-panel">
-                  Open Center Dashboard
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
-            </motion.div>
+  className="p-5 rounded-xl bg-gradient-primary text-primary-foreground"
+  initial={{ opacity: 0, x: 20 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ delay: 0.6 }}
+>
+  <h3 className="font-bold mb-2">Are you an educator?</h3>
+  <p className="text-sm opacity-90 mb-4">
+    Create courses, tests, and reach thousands of students.
+  </p>
+  <Button
+    variant="outline"
+    className="w-full text-primary-foreground border-primary-foreground/20 bg-white/20 hover:bg-white/30 hover:text-primary-foreground"
+    asChild
+  >
+    <Link to="/center-panel">
+      Open Center Dashboard
+      <ArrowRight className="w-4 h-4 ml-1" />
+    </Link>
+  </Button>
+</motion.div>
           </aside>
         </div>
       </main>
