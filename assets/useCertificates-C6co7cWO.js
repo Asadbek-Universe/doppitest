@@ -1,0 +1,8 @@
+import{c as u,b as d,a as o,g as l,h as y,s as n}from"./index-D6Uiw_5i.js";const m=u("SquareCheckBig",[["path",{d:"M21 10.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.5",key:"1uzm8b"}],["path",{d:"m9 11 3 3L22 4",key:"1pflzl"}]]),p=()=>{const{user:e}=d();return o({queryKey:["user-certificates",e?.id],queryFn:async()=>{if(!e?.id)return[];const{data:i,error:a}=await n.from("olympiad_certificates").select("*").eq("user_id",e.id).order("issued_at",{ascending:!1});if(a)throw a;if(!i||i.length===0)return[];const s=[...new Set(i.map(t=>t.olympiad_id))],{data:c}=await n.from("olympiads").select(`
+          id,
+          title,
+          start_date,
+          end_date,
+          center:educational_centers(id, name, logo_url, is_verified),
+          subject:subjects(id, name, color)
+        `).in("id",s),r=new Map(c?.map(t=>[t.id,t])||[]);return i.map(t=>({...t,olympiad:r.get(t.olympiad_id)||null}))},enabled:!!e?.id})},_=()=>{const e=l();return y({mutationFn:async({olympiadId:i,certificates:a})=>{const s=a.map(r=>({user_id:r.userId,olympiad_id:i,certificate_type:r.certificateType,rank:r.rank,score:r.score})),{error:c}=await n.from("olympiad_certificates").upsert(s,{onConflict:"user_id,olympiad_id"});if(c)throw c},onSuccess:(i,a)=>{e.invalidateQueries({queryKey:["olympiad-certificates",a.olympiadId]}),a.certificates.forEach(s=>{e.invalidateQueries({queryKey:["user-certificates",s.userId]})})}})},h=e=>o({queryKey:["olympiad-certificates",e],queryFn:async()=>{if(!e)return[];const{data:i,error:a}=await n.from("olympiad_certificates").select("*").eq("olympiad_id",e);if(a)throw a;return i||[]},enabled:!!e});export{m as S,h as a,_ as b,p as u};
